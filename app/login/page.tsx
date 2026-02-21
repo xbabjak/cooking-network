@@ -70,29 +70,25 @@ function LoginForm() {
             Sign in
           </button>
         </form>
-        {process.env.NODE_ENV !== "production" && (
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-300 dark:border-gray-600" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500">
-                or
-              </span>
-            </div>
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-gray-300 dark:border-gray-600" />
           </div>
-        )}
-        {process.env.NODE_ENV !== "production" && (
-          <button
-            type="button"
-            onClick={() =>
-              signIn("google", { callbackUrl, redirect: true })
-            }
-            className="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            Sign in with Google
-          </button>
-        )}
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500">
+              or
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            signIn("google", { callbackUrl, redirect: true })
+          }
+          className="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
+        >
+          Sign in with Google
+        </button>
         <p className="text-center text-sm text-gray-600 dark:text-gray-400">
           No account?{" "}
           <Link href="/register" className="text-amber-600 hover:underline">
