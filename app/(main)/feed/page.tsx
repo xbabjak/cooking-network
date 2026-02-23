@@ -1,4 +1,5 @@
 import { getFeedPosts } from "@/lib/posts";
+import { FeedPostAuthorLink } from "@/components/feed-post-author-link";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -21,46 +22,37 @@ export default async function FeedPage() {
             No posts yet. Be the first to share your cooking!
           </p>
         ) : (
-          posts.map((post) => (
-            <article
-              key={post.id}
-              className="border border-border rounded-lg p-4 hover:border-primary/30 transition-colors"
-            >
-              <Link href={`/post/${post.id}`} className="block">
-                <h2 className="font-semibold text-lg">{post.title}</h2>
-                <p className="text-muted line-clamp-2 mt-1">
-                  {post.content}
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  <Link
-                    href={
-                      post.author.username
-                        ? `/u/${post.author.username}`
-                        : `/u/me?id=${post.author.id}`
-                    }
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-2 text-sm text-muted hover:text-primary"
-                  >
-                    {post.author.image ? (
-                      <img
-                        src={post.author.image}
-                        alt=""
-                        className="w-6 h-6 rounded-full"
-                      />
-                    ) : (
-                      <span className="w-6 h-6 rounded-full bg-border flex items-center justify-center text-xs">
-                        {(post.author.name ?? post.author.username ?? "?")[0]}
-                      </span>
-                    )}
-                    {post.author.name ?? post.author.username ?? "Anonymous"}
-                  </Link>
-                  <span className="text-muted text-xs">
-                    {new Date(post.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </Link>
-            </article>
-          ))
+          posts.map((post) => {
+            const { author } = post;
+            const authorLabel = author.name ?? author.username ?? "Anonymous";
+            const authorHref = author.username
+              ? `/u/${author.username}`
+              : `/u/me?id=${author.id}`;
+
+            return (
+              <article
+                key={post.id}
+                className="border border-border rounded-lg p-4 hover:border-primary/30 transition-colors"
+              >
+                <Link href={`/post/${post.id}`} className="block">
+                  <h2 className="font-semibold text-lg">{post.title}</h2>
+                  <p className="text-muted line-clamp-2 mt-1">
+                    {post.content}
+                  </p>
+                  <div className="mt-3 flex items-center gap-2">
+                    <FeedPostAuthorLink
+                      href={authorHref}
+                      image={author.image}
+                      displayName={authorLabel}
+                    />
+                    <span className="text-muted text-xs">
+                      {new Date(post.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </Link>
+              </article>
+            );
+          })
         )}
       </div>
     </div>
