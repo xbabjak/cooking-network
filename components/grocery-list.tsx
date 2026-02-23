@@ -1,5 +1,6 @@
 "use client";
 
+import { TextInput, NumberInput } from "@mantine/core";
 import { useState } from "react";
 import {
   addGrocery,
@@ -137,48 +138,34 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm mb-1">Name</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-              />
-            </div>
-            <div>
-              <label className="block text-sm mb-1">Unit</label>
-              <input
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                placeholder="e.g. items, L, kg"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-              />
-            </div>
-            <div>
-              <label className="block text-sm mb-1">Quantity</label>
-              <input
-                type="number"
-                min={0}
-                step={0.5}
-                value={quantity}
-                onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-              />
-            </div>
-            <div>
-              <label className="block text-sm mb-1">Remind when below</label>
-              <input
-                type="number"
-                min={0}
-                step={0.5}
-                value={lowThreshold}
-                onChange={(e) =>
-                  setLowThreshold(parseFloat(e.target.value) || 0)
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-              />
-            </div>
+            <TextInput
+              label="Name"
+              value={name}
+              onChange={(e) => setName(e.currentTarget.value)}
+              required
+            />
+            <TextInput
+              label="Unit"
+              value={unit}
+              onChange={(e) => setUnit(e.currentTarget.value)}
+              placeholder="e.g. items, L, kg"
+            />
+            <NumberInput
+              label="Quantity"
+              min={0}
+              step={0.5}
+              value={quantity}
+              onChange={(value) => setQuantity(typeof value === "string" ? parseFloat(value) || 0 : value ?? 0)}
+            />
+            <NumberInput
+              label="Remind when below"
+              min={0}
+              step={0.5}
+              value={lowThreshold}
+              onChange={(value) =>
+                setLowThreshold(typeof value === "string" ? parseFloat(value) || 0 : value ?? 0)
+              }
+            />
           </div>
           <div className="flex gap-2">
             <button

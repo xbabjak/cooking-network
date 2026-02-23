@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  TextInput,
+  Textarea,
+  NumberInput,
+  Select,
+} from "@mantine/core";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPost, updatePost, deletePost } from "@/lib/actions/posts";
@@ -119,35 +125,30 @@ export function PostForm({
       {error && (
         <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
       )}
-      <div>
-        <label className="block text-sm font-medium mb-1">Title</label>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-          maxLength={200}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Content</label>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          required
-          rows={6}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-        />
-      </div>
+      <TextInput
+        label="Title"
+        value={title}
+        onChange={(e) => setTitle(e.currentTarget.value)}
+        required
+        maxLength={200}
+      />
+      <Textarea
+        label="Content"
+        value={content}
+        onChange={(e) => setContent(e.currentTarget.value)}
+        required
+        autosize
+        minRows={6}
+      />
       <div>
         <label className="block text-sm font-medium mb-1">Image URLs (max 5)</label>
         <div className="flex gap-2">
-          <input
+          <TextInput
             type="url"
             value={imageUrlInput}
-            onChange={(e) => setImageUrlInput(e.target.value)}
+            onChange={(e) => setImageUrlInput(e.currentTarget.value)}
             placeholder="https://..."
-            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+            className="flex-1"
           />
           <button
             type="button"
@@ -180,36 +181,28 @@ export function PostForm({
           </ul>
         )}
       </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Type</label>
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value as "story" | "recipe")}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-        >
-          <option value="story">Story</option>
-          <option value="recipe">Recipe</option>
-        </select>
-      </div>
+      <Select
+        label="Type"
+        value={type}
+        onChange={(v) => setType((v as "story" | "recipe") ?? "story")}
+        data={[
+          { value: "story", label: "Story" },
+          { value: "recipe", label: "Recipe" },
+        ]}
+      />
       {type === "recipe" && (
         <div className="space-y-3 p-4 border border-amber-200 dark:border-amber-800 rounded-lg">
           <h3 className="font-medium">Recipe details</h3>
-          <div>
-            <label className="block text-sm mb-1">Recipe name</label>
-            <input
-              value={recipeName}
-              onChange={(e) => setRecipeName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-            />
-          </div>
-          <div>
-            <label className="block text-sm mb-1">Description</label>
-            <input
-              value={recipeDescription}
-              onChange={(e) => setRecipeDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-            />
-          </div>
+          <TextInput
+            label="Recipe name"
+            value={recipeName}
+            onChange={(e) => setRecipeName(e.currentTarget.value)}
+          />
+          <TextInput
+            label="Description"
+            value={recipeDescription}
+            onChange={(e) => setRecipeDescription(e.currentTarget.value)}
+          />
           <div>
             <div className="flex justify-between items-center mb-1">
               <label className="text-sm">Ingredients</label>
@@ -222,30 +215,33 @@ export function PostForm({
               </button>
             </div>
             {ingredients.map((ing, i) => (
-              <div key={i} className="flex gap-2 mt-2">
-                <input
+              <div key={i} className="flex gap-2 mt-2 items-end">
+                <TextInput
                   placeholder="Ingredient name"
                   value={ing.ingredientName}
                   onChange={(e) =>
-                    updateIngredient(i, "ingredientName", e.target.value)
+                    updateIngredient(i, "ingredientName", e.currentTarget.value)
                   }
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                  className="flex-1"
                 />
-                <input
-                  type="number"
+                <NumberInput
                   min={0}
                   step={0.5}
                   value={ing.quantity}
-                  onChange={(e) =>
-                    updateIngredient(i, "quantity", parseFloat(e.target.value) || 0)
+                  onChange={(value) =>
+                    updateIngredient(
+                      i,
+                      "quantity",
+                      typeof value === "string" ? parseFloat(value) || 0 : value ?? 0
+                    )
                   }
-                  className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                  w={80}
                 />
-                <input
+                <TextInput
                   placeholder="Unit"
                   value={ing.unit}
-                  onChange={(e) => updateIngredient(i, "unit", e.target.value)}
-                  className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                  onChange={(e) => updateIngredient(i, "unit", e.currentTarget.value)}
+                  w={100}
                 />
                 <button
                   type="button"

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ColorSchemeScriptWrapper } from "@/components/color-scheme-script";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
@@ -13,7 +14,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <ColorSchemeScriptWrapper />
+      </head>
       <body className="antialiased min-h-screen">
         <Providers>{children}</Providers>
       </body>

@@ -1,5 +1,6 @@
 "use client";
 
+import { TextInput, PasswordInput } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
@@ -46,63 +47,34 @@ export default function RegisterPage() {
           {error && (
             <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
           )}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-            />
-          </div>
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium mb-1">
-              Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-            />
-          </div>
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium mb-1">
-              Username (for your blog URL)
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              pattern="^[a-zA-Z0-9_-]+$"
-              minLength={2}
-              maxLength={30}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Letters, numbers, underscore, hyphen. Optional.
-            </p>
-          </div>
+          <TextInput
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.currentTarget.value)}
+            required
+          />
+          <PasswordInput
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.currentTarget.value)}
+            required
+            minLength={6}
+          />
+          <TextInput
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.currentTarget.value)}
+          />
+          <TextInput
+            label="Username (for your blog URL)"
+            description="Letters, numbers, underscore, hyphen. Optional."
+            value={username}
+            onChange={(e) => setUsername(e.currentTarget.value)}
+            pattern="^[a-zA-Z0-9_-]+$"
+            minLength={2}
+            maxLength={30}
+          />
           <button
             type="submit"
             className="w-full py-2 px-4 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-md"

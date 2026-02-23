@@ -1,3 +1,6 @@
+/* Mantine in a layer so Tailwind and app styles take precedence */
+@import "@mantine/core/styles.layer.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
