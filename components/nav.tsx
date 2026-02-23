@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { Menu } from "@mantine/core";
 
 export function Nav() {
   const { data: session, status } = useSession();
@@ -24,12 +25,6 @@ export function Nav() {
           ) : session ? (
             <>
               <Link
-                href={session.user?.username ? `/u/${session.user.username}` : "/u/me"}
-                className="text-foreground hover:text-primary"
-              >
-                My Blog
-              </Link>
-              <Link
                 href="/post/new"
                 className="text-foreground hover:text-primary"
               >
@@ -47,12 +42,65 @@ export function Nav() {
               >
                 What can I cook?
               </Link>
-              <button
-                onClick={() => signOut({ callbackUrl: "/feed" })}
-                className="text-muted hover:text-error text-sm"
+              <Menu
+                shadow="md"
+                width={200}
+                position="bottom-end"
+                trigger="click-hover"
+                openDelay={100}
+                closeDelay={300}
+                classNames={{
+                  item: "px-4",
+                }}
               >
-                Sign out
-              </button>
+                <Menu.Target>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 text-foreground hover:text-primary"
+                  >
+                    {session.user?.image ? (
+                      <img
+                        src={session.user.image}
+                        alt=""
+                        className="w-7 h-7 rounded-full"
+                      />
+                    ) : (
+                      <span className="w-7 h-7 rounded-full bg-border flex items-center justify-center text-sm font-medium">
+                        {(session.user?.name ?? session.user?.username ?? "?")[0]}
+                      </span>
+                    )}
+                    <span className="hidden sm:inline">
+                      {session.user?.name ?? session.user?.username ?? "Account"}
+                    </span>
+                  </button>
+                </Menu.Target>
+                <Menu.Dropdown className="py-2 bg-surface border border-border">
+                  <Menu.Item
+                    component={Link}
+                    href={session.user?.username ? `/u/${session.user.username}` : "/u/me"}
+                    className="text-foreground hover:bg-hover hover:text-primary"
+                  >
+                    My Blog
+                  </Menu.Item>
+                  <Menu.Item
+                    component={Link}
+                    href="/profile/edit"
+                    className="text-foreground hover:bg-hover hover:text-primary"
+                  >
+                    Edit profile
+                  </Menu.Item>
+                  <Menu.Divider className="border" />
+                  <Menu.Item
+                    // mozno staci redirect na logout page
+                    className="text-error hover:bg-hover hover:text-error"
+                    onClick={() => signOut({ callbackUrl: "/feed" })}
+                  >
+                    <div className="my-2">
+                      Sign out
+                    </div>
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
             </>
           ) : (
             <>
