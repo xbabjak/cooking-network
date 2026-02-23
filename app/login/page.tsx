@@ -31,12 +31,12 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
         <h1 className="text-2xl font-bold text-center">Sign in</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-sm text-error">{error}</p>
           )}
           <TextInput
             label="Email"
@@ -53,17 +53,17 @@ function LoginForm() {
           />
           <button
             type="submit"
-            className="w-full py-2 px-4 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-md"
+            className="w-full py-2 px-4 bg-primary hover:bg-primary-hover text-primary-foreground font-medium rounded-md"
           >
             Sign in
           </button>
         </form>
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-gray-300 dark:border-gray-600" />
+            <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500">
+            <span className="px-2 bg-background text-muted">
               or
             </span>
           </div>
@@ -73,13 +73,13 @@ function LoginForm() {
           onClick={() =>
             signIn("google", { callbackUrl, redirect: true })
           }
-          className="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
+          className="w-full py-2 px-4 border border-border rounded-md hover:bg-hover"
         >
           Sign in with Google
         </button>
-        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-center text-sm text-muted">
           No account?{" "}
-          <Link href="/register" className="text-amber-600 hover:underline">
+          <Link href="/register" className="text-primary hover:underline">
             Sign up
           </Link>
         </p>

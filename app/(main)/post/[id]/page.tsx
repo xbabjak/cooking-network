@@ -17,14 +17,14 @@ export default async function PostPage({ params }: Props) {
   return (
     <article className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold">{post.title}</h1>
-      <div className="flex items-center gap-2 mt-2 text-gray-500 dark:text-gray-400">
+      <div className="flex items-center gap-2 mt-2 text-muted">
         <Link
           href={
             post.author.username
               ? `/u/${post.author.username}`
               : `/u/me?id=${post.author.id}`
           }
-          className="flex items-center gap-2 hover:text-amber-600 dark:hover:text-amber-400"
+          className="flex items-center gap-2 hover:text-primary"
         >
           {post.author.image ? (
             <img
@@ -33,7 +33,7 @@ export default async function PostPage({ params }: Props) {
               className="w-8 h-8 rounded-full"
             />
           ) : (
-            <span className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-sm">
+            <span className="w-8 h-8 rounded-full bg-border flex items-center justify-center text-sm">
               {(post.author.name ?? post.author.username ?? "?")[0]}
             </span>
           )}
@@ -57,10 +57,10 @@ export default async function PostPage({ params }: Props) {
         {post.content}
       </div>
       {post.recipe && (
-        <div className="mt-8 p-4 border border-amber-200 dark:border-amber-800 rounded-lg">
+        <div className="mt-8 p-4 border border-border rounded-lg bg-surface-alt">
           <h2 className="font-semibold text-lg">Recipe: {post.recipe.name}</h2>
           {post.recipe.description && (
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-muted mt-1">
               {post.recipe.description}
             </p>
           )}
@@ -79,7 +79,7 @@ export default async function PostPage({ params }: Props) {
         <div className="mt-6">
           <Link
             href={`/post/${post.id}/edit`}
-            className="text-amber-600 hover:underline"
+            className="text-primary hover:underline"
           >
             Edit post
           </Link>

@@ -17,8 +17,8 @@ export default async function UserBlogPage({ params }: Props) {
     if (!session?.user?.id) {
       return (
         <div className="text-center py-12">
-          <p className="text-gray-500">Sign in to view your blog.</p>
-          <Link href="/login" className="text-amber-600 hover:underline mt-2 inline-block">
+          <p className="text-muted">Sign in to view your blog.</p>
+          <Link href="/login" className="text-primary hover:underline mt-2 inline-block">
             Sign in
           </Link>
         </div>
@@ -52,7 +52,7 @@ export default async function UserBlogPage({ params }: Props) {
               className="w-16 h-16 rounded-full object-cover"
             />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-amber-200 dark:bg-amber-900 flex items-center justify-center text-2xl font-semibold text-amber-800 dark:text-amber-200">
+            <div className="w-16 h-16 rounded-full bg-surface-alt flex items-center justify-center text-2xl font-semibold text-primary">
               {(user.name ?? user.username ?? "?")[0]}
             </div>
           )}
@@ -61,17 +61,17 @@ export default async function UserBlogPage({ params }: Props) {
               {user.name ?? user.username ?? "Chef"}
             </h1>
             {user.username && (
-              <p className="text-gray-500 dark:text-gray-400">@{user.username}</p>
+              <p className="text-muted">@{user.username}</p>
             )}
             {user.bio && (
-              <p className="text-gray-600 dark:text-gray-300 mt-1">{user.bio}</p>
+              <p className="text-muted mt-1">{user.bio}</p>
             )}
           </div>
         </div>
         {isOwnBlog && (
           <Link
             href="/post/new"
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-md"
+            className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium rounded-md"
           >
             New post
           </Link>
@@ -81,7 +81,7 @@ export default async function UserBlogPage({ params }: Props) {
       <h2 className="text-lg font-semibold">Posts</h2>
       <div className="space-y-4">
         {posts.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-muted">
             No posts yet.
             {isOwnBlog && " Create your first post!"}
           </p>
@@ -89,21 +89,21 @@ export default async function UserBlogPage({ params }: Props) {
           posts.map((post) => (
             <article
               key={post.id}
-              className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+              className="border border-border rounded-lg p-4"
             >
               <Link href={`/post/${post.id}`} className="block">
                 <h3 className="font-semibold">{post.title}</h3>
-                <p className="text-gray-600 dark:text-gray-400 line-clamp-2 mt-1 text-sm">
+                <p className="text-muted line-clamp-2 mt-1 text-sm">
                   {post.content}
                 </p>
-                <p className="text-gray-400 text-xs mt-2">
+                <p className="text-muted text-xs mt-2">
                   {new Date(post.createdAt).toLocaleDateString()}
                 </p>
               </Link>
               {isOwnBlog && (
                 <Link
                   href={`/post/${post.id}/edit`}
-                  className="text-sm text-amber-600 hover:underline mt-2 inline-block"
+                  className="text-sm text-primary hover:underline mt-2 inline-block"
                 >
                   Edit
                 </Link>

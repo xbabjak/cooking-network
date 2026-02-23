@@ -123,7 +123,7 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
         <button
           type="button"
           onClick={() => setShowForm(true)}
-          className="mb-4 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
+          className="mb-4 px-4 py-2 border border-border rounded-md hover:bg-hover"
         >
             + Add grocery
         </button>
@@ -132,10 +132,10 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
       {(showForm || editingId) && (
         <form
           onSubmit={editingId ? handleUpdate : handleAdd}
-          className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg space-y-3"
+          className="mb-6 p-4 border border-border rounded-lg space-y-3"
         >
           {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-sm text-error">{error}</p>
           )}
           <div className="grid grid-cols-2 gap-3">
             <TextInput
@@ -170,14 +170,14 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
           <div className="flex gap-2">
             <button
               type="submit"
-              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md"
+              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-md"
             >
               {editingId ? "Save" : "Add"}
             </button>
             <button
               type="button"
               onClick={resetForm}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
+              className="px-4 py-2 border border-border rounded-md hover:bg-hover"
             >
               Cancel
             </button>
@@ -189,11 +189,11 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
         {groceries.map((g) => (
           <li
             key={g.id}
-            className="flex items-center justify-between gap-4 py-2 border-b border-gray-100 dark:border-gray-800"
+            className="flex items-center justify-between gap-4 py-2 border-b border-border"
           >
             <div className="flex-1 min-w-0">
               <span className="font-medium">{g.name}</span>
-              <span className="text-gray-500 dark:text-gray-400 ml-2">
+              <span className="text-muted ml-2">
                 {g.quantity} {g.unit}
                 {g.lowThreshold > 0 && (
                   <span className="text-xs">
@@ -207,7 +207,7 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
               <button
                 type="button"
                 onClick={() => handleDecrement(g.id)}
-                className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-800"
+                className="px-2 py-1 text-sm border border-border rounded hover:bg-hover"
                 title="Use one"
               >
                 −
@@ -215,14 +215,14 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
               <button
                 type="button"
                 onClick={() => startEdit(g)}
-                className="text-sm text-amber-600 hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 Edit
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(g.id)}
-                className="text-sm text-red-500 hover:underline"
+                className="text-sm text-error hover:underline"
               >
                 Remove
               </button>
@@ -231,7 +231,7 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
         ))}
       </ul>
       {groceries.length === 0 && !showForm && (
-        <p className="text-gray-500 dark:text-gray-400">
+        <p className="text-muted">
           No groceries yet. Add items to track and get low-stock reminders.
         </p>
       )}

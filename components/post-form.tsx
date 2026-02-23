@@ -123,7 +123,7 @@ export function PostForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-sm text-error">{error}</p>
       )}
       <TextInput
         label="Title"
@@ -153,7 +153,7 @@ export function PostForm({
           <button
             type="button"
             onClick={addImage}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="px-4 py-2 border border-border rounded-md hover:bg-hover"
           >
             Add
           </button>
@@ -172,7 +172,7 @@ export function PostForm({
                   onClick={() =>
                     setImageUrls((prev) => prev.filter((_, j) => j !== i))
                   }
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs"
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-error text-white rounded-full text-xs"
                 >
                   ×
                 </button>
@@ -191,7 +191,7 @@ export function PostForm({
         ]}
       />
       {type === "recipe" && (
-        <div className="space-y-3 p-4 border border-amber-200 dark:border-amber-800 rounded-lg">
+        <div className="space-y-3 p-4 border border-border rounded-lg bg-surface-alt">
           <h3 className="font-medium">Recipe details</h3>
           <TextInput
             label="Recipe name"
@@ -209,7 +209,7 @@ export function PostForm({
               <button
                 type="button"
                 onClick={addIngredient}
-                className="text-sm text-amber-600 hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 + Add
               </button>
@@ -246,7 +246,7 @@ export function PostForm({
                 <button
                   type="button"
                   onClick={() => removeIngredient(i)}
-                  className="text-red-500 hover:underline"
+                  className="text-error hover:underline"
                 >
                   Remove
                 </button>
@@ -259,7 +259,7 @@ export function PostForm({
         <button
           type="submit"
           disabled={submitting}
-          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-medium rounded-md"
+          className="px-4 py-2 bg-primary hover:bg-primary-hover disabled:opacity-50 text-primary-foreground font-medium rounded-md"
         >
           {postId ? "Save" : "Publish"}
         </button>
@@ -268,7 +268,7 @@ export function PostForm({
             type="button"
             onClick={handleDelete}
             disabled={submitting}
-            className="px-4 py-2 border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md"
+            className="px-4 py-2 border border-error text-error hover:bg-hover rounded-md"
           >
             Delete
           </button>
