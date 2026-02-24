@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Menu } from "@mantine/core";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Nav() {
   const { data: session, status } = useSession();
@@ -20,6 +21,7 @@ export function Nav() {
           >
             Feed
           </Link>
+          <ThemeToggle />
           {status === "loading" ? (
             <span className="text-muted">...</span>
           ) : session ? (

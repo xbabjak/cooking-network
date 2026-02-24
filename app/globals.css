@@ -20,20 +20,19 @@
   --color-error: #dc2626;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-primary: #f59e0b;
-    --color-primary-hover: #d97706;
-    --color-primary-foreground: #1c1917;
-    --color-background: #1c1917;
-    --color-foreground: #fafaf9;
-    --color-surface: #292524;
-    --color-surface-alt: #44403c;
-    --color-hover: #3f3f38;
-    --color-muted: #a8a29e;
-    --color-border: #57534e;
-    --color-error: #ef4444;
-  }
+/* Dark theme: cooking social network — warm stone backgrounds, amber accents */
+:root[data-mantine-color-scheme="dark"] {
+  --color-primary: #f59e0b;
+  --color-primary-hover: #fbbf24;
+  --color-primary-foreground: #1c1917;
+  --color-background: #1c1917;
+  --color-foreground: #fafaf9;
+  --color-surface: #292524;
+  --color-surface-alt: #44403c;
+  --color-hover: #3f3f38;
+  --color-muted: #a8a29e;
+  --color-border: #57534e;
+  --color-error: #f87171;
 }
 
 body {
