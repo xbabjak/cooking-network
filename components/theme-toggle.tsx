@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   ActionIcon,
   useMantineColorScheme,
@@ -46,10 +47,15 @@ function MoonIcon({ className }: { className?: string }) {
 }
 
 export function ThemeToggle() {
+  const [mounted, setMounted] = useState(false);
   const { setColorScheme } = useMantineColorScheme();
   const computedColorScheme = useComputedColorScheme("light", {
     getInitialValueInEffect: true,
   });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <ActionIcon
@@ -61,7 +67,13 @@ export function ThemeToggle() {
       }
       className="text-foreground hover:text-primary"
     >
-      {computedColorScheme === "dark" ? <SunIcon /> : <MoonIcon />}
+      {!mounted ? (
+        <span className="w-[18px] h-[18px]" aria-hidden />
+      ) : computedColorScheme === "dark" ? (
+        <SunIcon />
+      ) : (
+        <MoonIcon />
+      )}
     </ActionIcon>
   );
 }

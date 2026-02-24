@@ -1,12 +1,18 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Menu } from "@mantine/core";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Nav() {
+  const [mounted, setMounted] = useState(false);
   const { data: session, status } = useSession();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-surface">
@@ -22,7 +28,7 @@ export function Nav() {
             Feed
           </Link>
           <ThemeToggle />
-          {status === "loading" ? (
+          {!mounted || status === "loading" ? (
             <span className="text-muted">...</span>
           ) : session ? (
             <>
@@ -93,13 +99,10 @@ export function Nav() {
                   </Menu.Item>
                   <Menu.Divider className="border" />
                   <Menu.Item
-                    // mozno staci redirect na logout page
                     className="text-error hover:bg-hover hover:text-error"
                     onClick={() => signOut({ callbackUrl: "/feed" })}
                   >
-                    <div className="my-2">
-                      Sign out
-                    </div>
+                    Sign out
                   </Menu.Item>
                 </Menu.Dropdown>
               </Menu>

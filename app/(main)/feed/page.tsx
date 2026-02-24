@@ -39,17 +39,17 @@ export default async function FeedPage() {
                   <p className="text-muted line-clamp-2 mt-1">
                     {post.content}
                   </p>
-                  <div className="mt-3 flex items-center gap-2">
-                    <FeedPostAuthorLink
-                      href={authorHref}
-                      image={author.image}
-                      displayName={authorLabel}
-                    />
-                    <span className="text-muted text-xs">
-                      {new Date(post.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
                 </Link>
+                <div className="mt-3 flex items-center gap-2">
+                  <FeedPostAuthorLink
+                    href={authorHref}
+                    image={author.image}
+                    displayName={authorLabel}
+                  />
+                  <span className="text-muted text-xs">
+                    {new Date(post.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
               </article>
             );
           })
