@@ -9,7 +9,7 @@ export function Nav() {
   const { data: session, status } = useSession();
 
   return (
-    <nav className="border-b border-border bg-surface">
+    <nav className="sticky top-0 z-50 border-b border-border bg-surface">
       <div className="max-w-4xl mx-auto px-4 flex items-center justify-between h-14 flex-wrap gap-2 py-2">
         <Link href="/feed" className="font-semibold text-lg text-primary shrink-0">
           Cooking Network

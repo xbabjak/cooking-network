@@ -31,7 +31,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
         <h1 className="text-2xl font-bold text-center">Sign in</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -90,7 +90,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading…</div>}>
+    <Suspense fallback={<div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">Loading…</div>}>
       <LoginForm />
     </Suspense>
   );
