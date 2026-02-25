@@ -74,16 +74,39 @@ model Post {
   recipe Recipe? @relation(fields: [recipeId], references: [id], onDelete: SetNull)
 }
 
+model GroceryItem {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  defaultUnit String   @default("items")
+  createdAt   DateTime @default(now())
+
+  aliases          GroceryItemAlias[]
+  groceries        Grocery[]
+  recipeIngredients RecipeIngredient[]
+}
+
+model GroceryItemAlias {
+  id            String @id @default(cuid())
+  groceryItemId String
+  alias         String
+
+  groceryItem GroceryItem @relation(fields: [groceryItemId], references: [id], onDelete: Cascade)
+
+  @@unique([alias])
+  @@index([alias])
+}
+
 model Grocery {
   id            String   @id @default(cuid())
   userId        String
-  name          String
+  groceryItemId String
   unit          String   @default("items")
   quantity      Float    @default(0)
   lowThreshold  Float    @default(0)
   updatedAt     DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groceryItem GroceryItem @relation(fields: [groceryItemId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -104,11 +127,12 @@ model Recipe {
 model RecipeIngredient {
   id             String  @id @default(cuid())
   recipeId       String
-  ingredientName String
+  groceryItemId  String
   quantity       Float   @default(1)
   unit           String  @default("")
 
-  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  recipe     Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  groceryItem GroceryItem @relation(fields: [groceryItemId], references: [id], onDelete: Cascade)
 
   @@index([recipeId])
 }

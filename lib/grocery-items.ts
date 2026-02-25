@@ -1,0 +1,84 @@
+"use server";
+
+import { prisma } from "@/lib/prisma";
+
+function normalize(str: string): string {
+  return str.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export type GroceryItemOption = {
+  id: string;
+  name: string;
+  defaultUnit: string;
+};
+
+export async function getGroceryItems(search?: string): Promise<GroceryItemOption[]> {
+  const items = await prisma.groceryItem.findMany({
+    where: search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            {
+              aliases: {
+                some: { alias: { contains: search, mode: "insensitive" } },
+              },
+            },
+          ],
+        }
+      : undefined,
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, defaultUnit: true },
+    take: 50,
+  });
+  return items;
+}
+
+export async function findOrCreateGroceryItem(
+  name: string,
+  alias?: string
+): Promise<{ id: string; name: string; defaultUnit: string }> {
+  const normalized = normalize(name);
+  if (!normalized) {
+    throw new Error("Grocery item name cannot be empty");
+  }
+
+  const capitalized =
+    normalized.charAt(0).toUpperCase() + normalized.slice(1);
+
+  const existing =
+    (await prisma.groceryItem.findFirst({
+      where: { name: { equals: capitalized, mode: "insensitive" } },
+      select: { id: true, name: true, defaultUnit: true },
+    })) ??
+    (alias
+      ? await prisma.groceryItemAlias
+          .findFirst({
+            where: {
+              alias: { equals: normalize(alias), mode: "insensitive" },
+            },
+            include: { groceryItem: true },
+          })
+          .then((a) => a?.groceryItem)
+      : null);
+
+  if (existing) {
+    return {
+      id: existing.id,
+      name: existing.name,
+      defaultUnit: existing.defaultUnit,
+    };
+  }
+
+  const created = await prisma.groceryItem.create({
+    data: {
+      name: capitalized,
+      aliases:
+        alias && normalize(alias) !== normalized
+          ? { create: [{ alias: normalize(alias) }] }
+          : undefined,
+    },
+    select: { id: true, name: true, defaultUnit: true },
+  });
+
+  return created;
+}

@@ -1,9 +1,5 @@
 import { prisma } from "@/lib/prisma";
 
-function normalize(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
 export type RecipeWithMatch = {
   id: string;
   name: string;
@@ -20,20 +16,18 @@ export async function getRecommendations(userId: string): Promise<RecipeWithMatc
   const [groceries, recipes] = await Promise.all([
     prisma.grocery.findMany({
       where: { userId },
-      select: { name: true },
+      select: { groceryItemId: true },
     }),
     prisma.recipe.findMany({
       include: {
-        ingredients: true,
+        ingredients: { include: { groceryItem: true } },
         posts: { take: 1, select: { id: true } },
       },
       orderBy: { createdAt: "desc" },
     }),
   ]);
 
-  const userGroceryNames = new Set(
-    groceries.map((g) => normalize(g.name))
-  );
+  const userGroceryItemIds = new Set(groceries.map((g) => g.groceryItemId));
 
   const results: RecipeWithMatch[] = recipes
     .filter((r) => r.ingredients.length > 0)
@@ -42,11 +36,10 @@ export async function getRecommendations(userId: string): Promise<RecipeWithMatc
       const missing: string[] = [];
       let matchCount = 0;
       for (const ing of recipe.ingredients) {
-        const normalized = normalize(ing.ingredientName);
-        if (userGroceryNames.has(normalized)) {
+        if (userGroceryItemIds.has(ing.groceryItemId)) {
           matchCount++;
         } else {
-          missing.push(ing.ingredientName);
+          missing.push(ing.groceryItem.name);
         }
       }
       const matchPercent = total > 0 ? Math.round((matchCount / total) * 100) : 0;

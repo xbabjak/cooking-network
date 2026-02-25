@@ -5,12 +5,20 @@ import {
   Textarea,
   NumberInput,
   Select,
+  Autocomplete,
 } from "@mantine/core";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createPost, updatePost, deletePost } from "@/lib/actions/posts";
+import { getGroceryItems, type GroceryItemOption } from "@/lib/grocery-items";
 
-type Ingredient = { ingredientName: string; quantity: number; unit: string };
+type Ingredient = {
+  rowId: string;
+  groceryItemId?: string;
+  groceryItemName?: string;
+  quantity: number;
+  unit: string;
+};
 
 type Props = {
   postId?: string;
@@ -21,8 +29,9 @@ type Props = {
   initialRecipe?: {
     name: string;
     description: string;
-    ingredients: Ingredient[];
+    ingredients: Omit<Ingredient, "rowId">[];
   };
+  initialGroceryItems: GroceryItemOption[];
 };
 
 export function PostForm({
@@ -32,6 +41,7 @@ export function PostForm({
   initialImageUrls = [],
   initialType = "story",
   initialRecipe,
+  initialGroceryItems,
 }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
@@ -43,11 +53,25 @@ export function PostForm({
   const [recipeDescription, setRecipeDescription] = useState(
     initialRecipe?.description ?? ""
   );
-  const [ingredients, setIngredients] = useState<Ingredient[]>(
-    initialRecipe?.ingredients ?? [{ ingredientName: "", quantity: 1, unit: "" }]
-  );
+  const [ingredients, setIngredients] = useState<Ingredient[]>(() => {
+    const list =
+      initialRecipe?.ingredients?.length
+        ? initialRecipe.ingredients
+        : [{ groceryItemName: "", quantity: 1, unit: "" }];
+    return list.map((ing) => ({
+      ...ing,
+      rowId: crypto.randomUUID(),
+    }));
+  });
+  const [groceryItemsMap, setGroceryItemsMap] = useState<Record<string, GroceryItemOption[]>>({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const fetchGroceryItems = useCallback(async (rowId: string, search: string) => {
+    const items = await getGroceryItems(search || undefined);
+    setGroceryItemsMap((prev) => ({ ...prev, [rowId]: items }));
+    return items;
+  }, []);
 
   function addImage() {
     if (imageUrlInput.startsWith("http")) {
@@ -61,14 +85,28 @@ export function PostForm({
   function addIngredient() {
     setIngredients((prev) => [
       ...prev,
-      { ingredientName: "", quantity: 1, unit: "" },
+      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "" },
     ]);
   }
 
-  function updateIngredient(i: number, field: keyof Ingredient, value: string | number) {
+  function updateIngredient(i: number, field: keyof Omit<Ingredient, "rowId">, value: string | number) {
     setIngredients((prev) =>
       prev.map((ing, idx) =>
         idx === i ? { ...ing, [field]: value } : ing
+      )
+    );
+  }
+
+  function setIngredientGroceryItem(i: number, item: GroceryItemOption | null) {
+    setIngredients((prev) =>
+      prev.map((ing, idx) =>
+        idx === i
+          ? {
+              ...ing,
+              groceryItemId: item?.id,
+              groceryItemName: item?.name ?? "",
+            }
+          : ing
       )
     );
   }
@@ -92,7 +130,14 @@ export function PostForm({
       formData.set(
         "recipeIngredients",
         JSON.stringify(
-          ingredients.filter((i) => i.ingredientName.trim())
+          ingredients.filter(
+            (i) => i.groceryItemId || (i.groceryItemName && i.groceryItemName.trim())
+          ).map((i) => ({
+            groceryItemId: i.groceryItemId,
+            name: i.groceryItemName?.trim() || undefined,
+            quantity: i.quantity,
+            unit: i.unit,
+          }))
         )
       );
     }
@@ -214,14 +259,37 @@ export function PostForm({
                 + Add
               </button>
             </div>
-            {ingredients.map((ing, i) => (
-              <div key={i} className="flex gap-2 mt-2 items-end">
-                <TextInput
-                  placeholder="Ingredient name"
-                  value={ing.ingredientName}
-                  onChange={(e) =>
-                    updateIngredient(i, "ingredientName", e.currentTarget.value)
-                  }
+            {ingredients.map((ing, i) => {
+              const items = groceryItemsMap[ing.rowId] ?? initialGroceryItems;
+              const autocompleteData = items.map((item) => ({
+                value: item.name,
+                label: item.name,
+              }));
+              return (
+              <div key={ing.rowId} className="flex gap-2 mt-2 items-end">
+                <Autocomplete
+                  placeholder="Search or type to add new"
+                  data={autocompleteData}
+                  value={ing.groceryItemName ?? ""}
+                  onChange={async (value) => {
+                    updateIngredient(i, "groceryItemName", value);
+                    if (value.length >= 1) {
+                      const fetched = await fetchGroceryItems(ing.rowId, value);
+                      const match = fetched.find(
+                        (it) => it.name.toLowerCase() === value.toLowerCase()
+                      );
+                      setIngredientGroceryItem(i, match ?? null);
+                    } else {
+                      setIngredientGroceryItem(i, null);
+                    }
+                  }}
+                  onOptionSubmit={(value) => {
+                    const match = items.find(
+                      (it) => it.name.toLowerCase() === (value ?? "").toLowerCase()
+                    );
+                    if (match) setIngredientGroceryItem(i, match);
+                  }}
+                  filter={({ options }) => options}
                   className="flex-1"
                 />
                 <NumberInput
@@ -251,7 +319,8 @@ export function PostForm({
                   Remove
                 </button>
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       )}

@@ -21,7 +21,7 @@ export async function getPostById(id: string) {
         select: { id: true, name: true, username: true, image: true },
       },
       recipe: {
-        include: { ingredients: true },
+        include: { ingredients: { include: { groceryItem: true } } },
       },
     },
   });

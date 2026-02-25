@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPostById } from "@/lib/posts";
+import { getGroceryItems } from "@/lib/grocery-items";
 import { PostForm } from "@/components/post-form";
 
 type Props = { params: Promise<{ id: string }> };
@@ -11,7 +12,10 @@ export default async function EditPostPage({ params }: Props) {
   const session = await getServerSession(authOptions);
   if (!session) redirect(`/login?callbackUrl=/post/${id}/edit`);
 
-  const post = await getPostById(id);
+  const [post, initialGroceryItems] = await Promise.all([
+    getPostById(id),
+    getGroceryItems(),
+  ]);
   if (!post || post.authorId !== session.user.id) notFound();
 
   const initialRecipe = post.recipe
@@ -19,7 +23,8 @@ export default async function EditPostPage({ params }: Props) {
         name: post.recipe.name,
         description: post.recipe.description ?? "",
         ingredients: post.recipe.ingredients.map((i) => ({
-          ingredientName: i.ingredientName,
+          groceryItemId: i.groceryItemId,
+          groceryItemName: i.groceryItem.name,
           quantity: i.quantity,
           unit: i.unit,
         })),
@@ -36,6 +41,7 @@ export default async function EditPostPage({ params }: Props) {
         initialImageUrls={post.imageUrls}
         initialType={post.type as "story" | "recipe"}
         initialRecipe={initialRecipe}
+        initialGroceryItems={initialGroceryItems}
       />
     </div>
   );

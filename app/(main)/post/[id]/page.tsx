@@ -68,7 +68,7 @@ export default async function PostPage({ params }: Props) {
           <ul className="list-disc list-inside mt-1">
             {post.recipe.ingredients.map((ing) => (
               <li key={ing.id}>
-                {ing.ingredientName}
+                {ing.groceryItem.name}
                 {ing.quantity > 0 && ` — ${ing.quantity} ${ing.unit || ""}`}
               </li>
             ))}

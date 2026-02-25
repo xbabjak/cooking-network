@@ -4,7 +4,17 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { findOrCreateGroceryItem } from "@/lib/grocery-items";
 import { z } from "zod";
+
+const recipeIngredientSchema = z.object({
+  groceryItemId: z.string().min(1).optional(),
+  name: z.string().min(1).max(100).optional(),
+  quantity: z.number().min(0),
+  unit: z.string().optional(),
+}).refine((data) => data.groceryItemId || data.name, {
+  message: "Either groceryItemId or name is required",
+});
 
 const createSchema = z.object({
   title: z.string().min(1).max(200),
@@ -13,15 +23,7 @@ const createSchema = z.object({
   type: z.enum(["story", "recipe"]).optional(),
   recipeName: z.string().optional(),
   recipeDescription: z.string().optional(),
-  recipeIngredients: z
-    .array(
-      z.object({
-        ingredientName: z.string().min(1),
-        quantity: z.number().min(0),
-        unit: z.string().optional(),
-      })
-    )
-    .optional(),
+  recipeIngredients: z.array(recipeIngredientSchema).optional(),
 });
 
 const updateSchema = createSchema.partial().extend({
@@ -53,18 +55,30 @@ export async function createPost(formData: FormData) {
 
   let recipeId: string | null = null;
   if (type === "recipe" && recipeName && recipeIngredients?.length) {
+    const ingredientData = await Promise.all(
+      recipeIngredients.map(async (i) => {
+        let groceryItemId: string;
+        if (i.groceryItemId) {
+          groceryItemId = i.groceryItemId;
+        } else if (i.name) {
+          const item = await findOrCreateGroceryItem(i.name);
+          groceryItemId = item.id;
+        } else {
+          throw new Error("Invalid ingredient");
+        }
+        return {
+          groceryItemId,
+          quantity: i.quantity,
+          unit: i.unit ?? "",
+        };
+      })
+    );
     const recipe = await prisma.recipe.create({
       data: {
         name: recipeName,
         description: recipeDescription ?? null,
         authorId: session.user.id,
-        ingredients: {
-          create: recipeIngredients.map((i) => ({
-            ingredientName: i.ingredientName.trim().toLowerCase(),
-            quantity: i.quantity,
-            unit: i.unit ?? "",
-          })),
-        },
+        ingredients: { create: ingredientData },
       },
     });
     recipeId = recipe.id;
@@ -119,11 +133,24 @@ export async function updatePost(formData: FormData) {
 
   let recipeId = existing.recipeId;
   if (type === "recipe" && recipeName && recipeIngredients?.length) {
-    const ingredientData = recipeIngredients.map((i) => ({
-      ingredientName: i.ingredientName.trim().toLowerCase(),
-      quantity: i.quantity,
-      unit: i.unit ?? "",
-    }));
+    const ingredientData = await Promise.all(
+      recipeIngredients.map(async (i) => {
+        let groceryItemId: string;
+        if (i.groceryItemId) {
+          groceryItemId = i.groceryItemId;
+        } else if (i.name) {
+          const item = await findOrCreateGroceryItem(i.name);
+          groceryItemId = item.id;
+        } else {
+          throw new Error("Invalid ingredient");
+        }
+        return {
+          groceryItemId,
+          quantity: i.quantity,
+          unit: i.unit ?? "",
+        };
+      })
+    );
     if (existing.recipeId) {
       await prisma.recipe.update({
         where: { id: existing.recipeId },

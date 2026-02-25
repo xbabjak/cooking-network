@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getGroceryItems } from "@/lib/grocery-items";
 import { GroceryList } from "@/components/grocery-list";
 import Link from "next/link";
 
@@ -11,10 +12,14 @@ export default async function GroceriesPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login?callbackUrl=/groceries");
 
-  const groceries = await prisma.grocery.findMany({
-    where: { userId: session.user.id },
-    orderBy: { name: "asc" },
-  });
+  const [groceries, initialGroceryItems] = await Promise.all([
+    prisma.grocery.findMany({
+      where: { userId: session.user.id },
+      include: { groceryItem: true },
+      orderBy: { groceryItem: { name: "asc" } },
+    }),
+    getGroceryItems(),
+  ]);
 
   const lowStock = groceries.filter((g) => g.quantity < g.lowThreshold);
 
@@ -38,14 +43,14 @@ export default async function GroceriesPage() {
           <ul className="mt-2 space-y-1">
             {lowStock.map((g) => (
               <li key={g.id} className="text-sm text-foreground">
-                {g.name}: {g.quantity} {g.unit} (remind when below {g.lowThreshold})
+                {g.groceryItem.name}: {g.quantity} {g.unit} (remind when below {g.lowThreshold})
               </li>
             ))}
           </ul>
         </section>
       )}
 
-      <GroceryList groceries={groceries} />
+      <GroceryList groceries={groceries} initialGroceryItems={initialGroceryItems} />
     </div>
   );
 }

@@ -1,34 +1,50 @@
 "use client";
 
-import { TextInput, NumberInput } from "@mantine/core";
-import { useState } from "react";
+import { Autocomplete, NumberInput, TextInput } from "@mantine/core";
+import { useState, useCallback } from "react";
 import {
   addGrocery,
   updateGrocery,
   deleteGrocery,
   decrementGrocery,
 } from "@/lib/actions/groceries";
+import { getGroceryItems, type GroceryItemOption } from "@/lib/grocery-items";
 
 type Grocery = {
   id: string;
-  name: string;
+  groceryItemId: string;
+  groceryItem: { name: string };
   unit: string;
   quantity: number;
   lowThreshold: number;
 };
 
-export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
+type Props = {
+  groceries: Grocery[];
+  initialGroceryItems: GroceryItemOption[];
+};
+
+export function GroceryList({ groceries: initial, initialGroceryItems }: Props) {
   const [groceries, setGroceries] = useState(initial);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [name, setName] = useState("");
+  const [groceryItemSearch, setGroceryItemSearch] = useState("");
+  const [selectedGroceryItemId, setSelectedGroceryItemId] = useState<string | null>(null);
+  const [groceryItems, setGroceryItems] = useState(initialGroceryItems);
   const [unit, setUnit] = useState("items");
   const [quantity, setQuantity] = useState(0);
   const [lowThreshold, setLowThreshold] = useState(0);
   const [error, setError] = useState("");
 
+  const fetchGroceryItems = useCallback(async (search: string) => {
+    const items = await getGroceryItems(search || undefined);
+    setGroceryItems(items);
+    return items;
+  }, []);
+
   function resetForm() {
-    setName("");
+    setGroceryItemSearch("");
+    setSelectedGroceryItemId(null);
     setUnit("items");
     setQuantity(0);
     setLowThreshold(0);
@@ -39,18 +55,31 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
 
   function startEdit(g: Grocery) {
     setEditingId(g.id);
-    setName(g.name);
+    setGroceryItemSearch(g.groceryItem.name);
+    setSelectedGroceryItemId(g.groceryItemId);
     setUnit(g.unit);
     setQuantity(g.quantity);
     setLowThreshold(g.lowThreshold);
     setError("");
   }
 
+  const autocompleteData = groceryItems.map((item) => ({
+    value: item.name,
+    label: item.name,
+  }));
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     const formData = new FormData();
-    formData.set("name", name);
+    if (selectedGroceryItemId) {
+      formData.set("groceryItemId", selectedGroceryItemId);
+    } else if (groceryItemSearch.trim()) {
+      formData.set("name", groceryItemSearch.trim());
+    } else {
+      setError("Select or enter a grocery item");
+      return;
+    }
     formData.set("unit", unit);
     formData.set("quantity", String(quantity));
     formData.set("lowThreshold", String(lowThreshold));
@@ -59,16 +88,6 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
       setError(result.error);
       return;
     }
-    setGroceries((prev) => [
-      ...prev,
-      {
-        id: "",
-        name,
-        unit,
-        quantity,
-        lowThreshold,
-      },
-    ]);
     resetForm();
     window.location.reload();
   }
@@ -79,7 +98,6 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
     setError("");
     const formData = new FormData();
     formData.set("id", editingId);
-    formData.set("name", name);
     formData.set("unit", unit);
     formData.set("quantity", String(quantity));
     formData.set("lowThreshold", String(lowThreshold));
@@ -91,7 +109,7 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
     setGroceries((prev) =>
       prev.map((g) =>
         g.id === editingId
-          ? { ...g, name, unit, quantity, lowThreshold }
+          ? { ...g, unit, quantity, lowThreshold }
           : g
       )
     );
@@ -125,7 +143,7 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
           onClick={() => setShowForm(true)}
           className="mb-4 px-4 py-2 border border-border rounded-md hover:bg-hover"
         >
-            + Add grocery
+          + Add grocery
         </button>
       )}
 
@@ -138,12 +156,43 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
             <p className="text-sm text-error">{error}</p>
           )}
           <div className="grid grid-cols-2 gap-3">
-            <TextInput
-              label="Name"
-              value={name}
-              onChange={(e) => setName(e.currentTarget.value)}
-              required
-            />
+            {editingId ? (
+              <div className="col-span-2">
+                <label className="block text-sm font-medium mb-1">Item</label>
+                <p className="text-foreground py-2">{groceryItemSearch}</p>
+              </div>
+            ) : (
+              <Autocomplete
+                label="Item"
+                placeholder="Search or type to add new"
+                data={autocompleteData}
+                value={groceryItemSearch}
+                onChange={async (value) => {
+                  setGroceryItemSearch(value);
+                  if (value.length >= 1) {
+                    const fetched = await fetchGroceryItems(value);
+                    const match = fetched.find(
+                      (i) => i.name.toLowerCase() === value.toLowerCase()
+                    );
+                    setSelectedGroceryItemId(match?.id ?? null);
+                  } else {
+                    setGroceryItems(initialGroceryItems);
+                    setSelectedGroceryItemId(null);
+                  }
+                }}
+                onOptionSubmit={(value) => {
+                  const item = groceryItems.find(
+                    (i) => i.name.toLowerCase() === (value ?? "").toLowerCase()
+                  );
+                  if (item) {
+                    setGroceryItemSearch(item.name);
+                    setSelectedGroceryItemId(item.id);
+                  }
+                }}
+                filter={({ options }) => options}
+                required
+              />
+            )}
             <TextInput
               label="Unit"
               value={unit}
@@ -192,7 +241,7 @@ export function GroceryList({ groceries: initial }: { groceries: Grocery[] }) {
             className="flex items-center justify-between gap-4 py-2 border-b border-border"
           >
             <div className="flex-1 min-w-0">
-              <span className="font-medium">{g.name}</span>
+              <span className="font-medium">{g.groceryItem.name}</span>
               <span className="text-muted ml-2">
                 {g.quantity} {g.unit}
                 {g.lowThreshold > 0 && (
