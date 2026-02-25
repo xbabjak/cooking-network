@@ -104,7 +104,7 @@ export function PostForm({
           ? {
               ...ing,
               groceryItemId: item?.id,
-              groceryItemName: item?.name ?? "",
+              groceryItemName: item != null ? item.name : (ing.groceryItemName ?? ""),
             }
           : ing
       )

@@ -19,14 +19,95 @@ async function findOrCreateGroceryItem(name: string) {
 }
 
 async function main() {
-  const commonItems = [
-    "Eggs", "Butter", "Salt", "Pasta", "Tomatoes", "Garlic", "Olive oil",
-    "Lettuce", "Cucumber", "Milk", "Cereal", "Bread",
+  const vegetables = [
+    "Onion", "Carrot", "Celery", "Bell pepper", "Broccoli", "Spinach", "Zucchini",
+    "Potato", "Sweet potato", "Mushrooms", "Green beans", "Peas", "Corn", "Cabbage",
+    "Kale", "Leek", "Asparagus", "Eggplant", "Tomatoes", "Lettuce", "Cucumber",
+    "Garlic", "Radish", "Beet", "Brussels sprouts", "Cauliflower", "Collard greens",
+    "Fennel", "Okra", "Parsnip", "Pumpkin", "Swiss chard", "Turnip", "Watercress",
   ];
-  for (const name of commonItems) {
+  const fruits = [
+    "Lemon", "Lime", "Apple", "Banana", "Orange", "Strawberries", "Blueberries",
+    "Raspberries", "Blackberries", "Avocado", "Mango", "Pineapple", "Peach", "Pear",
+    "Plum", "Grapes", "Cranberries", "Coconut", "Cherry", "Grapefruit", "Kiwi",
+    "Melon", "Watermelon", "Cantaloupe", "Apricot", "Fig", "Pomegranate", "Papaya",
+    "Passion fruit", "Dragon fruit", "Dates", "Prunes", "Raisins",
+  ];
+  const dairyAndEggs = [
+    "Eggs", "Butter", "Milk", "Cream", "Yogurt", "Parmesan", "Cheddar", "Mozzarella",
+    "Feta", "Sour cream", "Cottage cheese", "Ricotta", "Cream cheese", "Goat cheese",
+    "Swiss cheese", "Brie", "Heavy cream", "Half and half", "Condensed milk",
+  ];
+  const meatPoultryFish = [
+    "Chicken", "Beef", "Pork", "Lamb", "Bacon", "Sausage", "Salmon", "Tuna", "Shrimp",
+    "Cod", "Tilapia", "Halibut", "Turkey", "Ground beef", "Ground pork", "Ham",
+    "Chicken breast", "Chicken thigh", "Pork chop", "Steak", "Lobster", "Crab",
+    "Anchovies", "Sardines", "White fish", "Duck", "Veal",
+  ];
+  const grainsPastaBread = [
+    "Flour", "Rice", "Pasta", "Bread", "Oats", "Couscous", "Quinoa", "Breadcrumbs",
+    "All-purpose flour", "Whole wheat flour", "Cornmeal", "Polenta", "Barley",
+    "Bulgur", "Noodles", "Spaghetti", "Penne", "Lasagna noodles", "Tortilla",
+    "Pita bread", "Bagel", "Croissant", "Cereal", "Granola",
+  ];
+  const oilsVinegarSauces = [
+    "Olive oil", "Vegetable oil", "Canola oil", "Coconut oil", "Sesame oil",
+    "White vinegar", "Balsamic vinegar", "Apple cider vinegar", "Rice vinegar",
+    "Soy sauce", "Tomato paste", "Fish sauce", "Oyster sauce", "Teriyaki sauce",
+    "Hot sauce", "Worcestershire sauce", "Tomato sauce",
+  ];
+  const spicesAndHerbs = [
+    "Salt", "Black pepper", "Paprika", "Cumin", "Cinnamon", "Nutmeg", "Oregano",
+    "Basil", "Thyme", "Rosemary", "Parsley", "Cilantro", "Bay leaves", "Ginger",
+    "Turmeric", "Chili powder", "Cayenne pepper", "Red pepper flakes", "Coriander",
+    "Cardamom", "Cloves", "Allspice", "Mustard seeds", "Fennel seeds", "Dill",
+    "Sage", "Mint", "Tarragon", "Marjoram", "Smoked paprika", "Garlic powder",
+    "Onion powder", "Italian seasoning", "Curry powder", "Vanilla bean",
+  ];
+  const pantryCanned = [
+    "Canned tomatoes", "Black beans", "Kidney beans", "Chickpeas", "Lentils",
+    "Chicken stock", "Vegetable stock", "Beef stock", "Coconut milk", "Honey",
+    "Maple syrup", "Jam", "Peanut butter", "Almond butter", "Tahini", "Olives",
+    "Capers", "Sun-dried tomatoes", "Canned corn", "Canned beans", "Broth",
+    "Salsa", "Chipotle peppers", "Green chiles", "Artichoke hearts", "Pesto",
+    "Nutella", "Marmalade", "Molasses", "Agave syrup", "Golden syrup",
+  ];
+  const baking = [
+    "Sugar", "Brown sugar", "Baking powder", "Baking soda", "Vanilla extract",
+    "Cocoa powder", "Chocolate", "Chocolate chips", "Powdered sugar", "Cornstarch",
+    "Yeast", "Almond extract", "Cream of tartar", "Shortening", "Pie crust",
+    "Phyllo dough", "Puff pastry", "Condensed milk", "Evaporated milk",
+  ];
+  const condimentsAndOther = [
+    "Mustard", "Ketchup", "Mayonnaise", "Relish", "Barbecue sauce", "Sriracha",
+    "Horseradish", "Tartar sauce", "Ranch dressing", "Vinaigrette", "Hummus",
+    "Guacamole", "Sour cream", "Pickles", "Jalapeños",
+  ];
+  const beverages = [
+    "Coffee", "Tea", "Juice", "Orange juice", "Lemon juice", "Lime juice",
+    "Apple juice", "Cranberry juice", "Tomato juice", "Soda", "Tonic water",
+    "Beer", "Wine", "Red wine", "White wine", "Vinegar", "Sparkling water",
+    "Coconut water", "Almond milk", "Oat milk", "Green tea", "Espresso",
+  ];
+
+  const allGroceryNames = [
+    ...vegetables,
+    ...fruits,
+    ...dairyAndEggs,
+    ...meatPoultryFish,
+    ...grainsPastaBread,
+    ...oilsVinegarSauces,
+    ...spicesAndHerbs,
+    ...pantryCanned,
+    ...baking,
+    ...condimentsAndOther,
+    ...beverages,
+  ];
+
+  for (const name of allGroceryNames) {
     await findOrCreateGroceryItem(name);
   }
-  console.log("Seeded grocery items");
+  console.log("Seeded grocery items:", allGroceryNames.length);
 
   const recipes = [
     {
