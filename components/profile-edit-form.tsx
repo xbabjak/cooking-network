@@ -9,6 +9,7 @@ type Props = {
   initialUsername: string;
   initialImage: string | null;
   initialBio: string | null;
+  initialSkipDoneCookingConfirm: boolean;
   canChangePassword: boolean;
 };
 
@@ -17,6 +18,7 @@ export function ProfileEditForm({
   initialUsername,
   initialImage,
   initialBio,
+  initialSkipDoneCookingConfirm,
   canChangePassword,
 }: Props) {
   const router = useRouter();
@@ -24,6 +26,9 @@ export function ProfileEditForm({
   const [username, setUsername] = useState(initialUsername ?? "");
   const [image, setImage] = useState(initialImage ?? "");
   const [bio, setBio] = useState(initialBio ?? "");
+  const [skipDoneCookingConfirm, setSkipDoneCookingConfirm] = useState(
+    initialSkipDoneCookingConfirm ?? false
+  );
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -59,6 +64,7 @@ export function ProfileEditForm({
           username: username || undefined,
           image: image.trim() || "",
           bio: bio || undefined,
+          skipDoneCookingConfirm,
         }),
       });
 
@@ -139,6 +145,21 @@ export function ProfileEditForm({
         onChange={(e) => setBio(e.currentTarget.value)}
         minRows={3}
       />
+
+      <div className="p-4 border border-border rounded-lg bg-surface-alt space-y-2">
+        <h3 className="font-medium">Cooking</h3>
+        <label className="flex cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            checked={skipDoneCookingConfirm}
+            onChange={(e) => setSkipDoneCookingConfirm(e.target.checked)}
+            className="h-4 w-4 rounded border-border"
+          />
+          <span className="text-sm">
+            Skip confirmation when removing groceries after cooking
+          </span>
+        </label>
+      </div>
 
       {canChangePassword && (
         <div className="space-y-3 p-4 border border-border rounded-lg bg-surface-alt">

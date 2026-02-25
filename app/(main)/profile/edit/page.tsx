@@ -25,6 +25,7 @@ export default async function ProfileEditPage() {
       image: true,
       bio: true,
       password: true,
+      skipDoneCookingConfirm: true,
     },
   });
 
@@ -38,6 +39,7 @@ export default async function ProfileEditPage() {
         initialUsername={user.username ?? ""}
         initialImage={user.image}
         initialBio={user.bio}
+        initialSkipDoneCookingConfirm={user.skipDoneCookingConfirm}
         canChangePassword={!!user.password}
       />
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { createTheme, MantineProvider } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 import { SessionProvider } from "next-auth/react";
 import { ReactNode } from "react";
 
@@ -25,7 +26,10 @@ const cookingTheme = createTheme({
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <MantineProvider theme={cookingTheme} defaultColorScheme="light">
-      <SessionProvider>{children}</SessionProvider>
+      <SessionProvider>
+        <Notifications position="bottom-right" />
+        {children}
+      </SessionProvider>
     </MantineProvider>
   );
 }

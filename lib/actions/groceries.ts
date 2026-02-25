@@ -137,3 +137,31 @@ export async function decrementGrocery(id: string) {
   revalidatePath("/groceries");
   return { success: true };
 }
+
+export async function consumeRecipeIngredients(recipeId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
+  const recipe = await prisma.recipe.findUnique({
+    where: { id: recipeId },
+    include: { ingredients: true },
+  });
+  if (!recipe) return { error: "Recipe not found" };
+
+  const userId = session.user.id;
+  for (const ing of recipe.ingredients) {
+    const grocery = await prisma.grocery.findFirst({
+      where: { userId, groceryItemId: ing.groceryItemId },
+    });
+    if (grocery) {
+      const newQuantity = Math.max(0, grocery.quantity - ing.quantity);
+      await prisma.grocery.update({
+        where: { id: grocery.id },
+        data: { quantity: newQuantity },
+      });
+    }
+  }
+
+  revalidatePath("/groceries");
+  return { success: true };
+}

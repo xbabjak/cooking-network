@@ -15,6 +15,7 @@ const profileSchema = z.object({
     .optional(),
   image: z.union([z.string().url(), z.literal("")]).optional(),
   bio: z.string().optional(),
+  skipDoneCookingConfirm: z.boolean().optional(),
 });
 
 export async function PATCH(req: Request) {
@@ -33,18 +34,21 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const { name, username, image, bio } = parsed.data;
+    const { name, username, image, bio, skipDoneCookingConfirm } = parsed.data;
     const updateData: {
       name?: string | null;
       username?: string | null;
       image?: string | null;
       bio?: string | null;
+      skipDoneCookingConfirm?: boolean;
     } = {};
 
     if (name !== undefined) updateData.name = name || null;
     if (username !== undefined) updateData.username = username || null;
     if (image !== undefined) updateData.image = image || null;
     if (bio !== undefined) updateData.bio = bio || null;
+    if (skipDoneCookingConfirm !== undefined)
+      updateData.skipDoneCookingConfirm = skipDoneCookingConfirm;
 
     if (username) {
       const existingUsername = await prisma.user.findFirst({
@@ -71,6 +75,7 @@ export async function PATCH(req: Request) {
         username: true,
         image: true,
         bio: true,
+        skipDoneCookingConfirm: true,
       },
     });
 

@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getPostById } from "@/lib/posts";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { DoneCookingButton } from "@/components/done-cooking-button";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -13,6 +15,15 @@ export default async function PostPage({ params }: Props) {
   if (!post) notFound();
 
   const isAuthor = session?.user?.id === post.authorId;
+
+  let skipDoneCookingConfirm = false;
+  if (session?.user?.id) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { skipDoneCookingConfirm: true },
+    });
+    skipDoneCookingConfirm = user?.skipDoneCookingConfirm ?? false;
+  }
 
   return (
     <article className="max-w-2xl mx-auto">
@@ -73,6 +84,13 @@ export default async function PostPage({ params }: Props) {
               </li>
             ))}
           </ul>
+          {session?.user && (
+            <DoneCookingButton
+              recipeId={post.recipe.id}
+              recipeName={post.recipe.name}
+              skipConfirmFromSettings={skipDoneCookingConfirm}
+            />
+          )}
         </div>
       )}
       {isAuthor && (

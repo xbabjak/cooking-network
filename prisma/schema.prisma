@@ -7,16 +7,17 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified DateTime?
-  name          String?
-  username      String?   @unique
-  image         String?
-  bio           String?
-  password      String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                      String    @id @default(cuid())
+  email                   String    @unique
+  emailVerified           DateTime?
+  name                    String?
+  username                String?   @unique
+  image                   String?
+  bio                     String?
+  password                String?
+  skipDoneCookingConfirm  Boolean   @default(false)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   accounts Account[]
   sessions Session[]
