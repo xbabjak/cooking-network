@@ -74,15 +74,27 @@ model Post {
   recipe Recipe? @relation(fields: [recipeId], references: [id], onDelete: SetNull)
 }
 
-model GroceryItem {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  defaultUnit String   @default("items")
-  createdAt   DateTime @default(now())
+model GroceryType {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  sortOrder  Int      @default(0)
 
-  aliases          GroceryItemAlias[]
-  groceries        Grocery[]
+  groceryItems GroceryItem[]
+}
+
+model GroceryItem {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  defaultUnit    String   @default("items")
+  groceryTypeId String
+  createdAt      DateTime @default(now())
+
+  groceryType    GroceryType       @relation(fields: [groceryTypeId], references: [id], onDelete: Restrict)
+  aliases        GroceryItemAlias[]
+  groceries      Grocery[]
   recipeIngredients RecipeIngredient[]
+
+  @@index([groceryTypeId])
 }
 
 model GroceryItemAlias {

@@ -10,27 +10,47 @@ export type GroceryItemOption = {
   id: string;
   name: string;
   defaultUnit: string;
+  groceryTypeId: string;
+  groceryTypeName: string;
 };
 
-export async function getGroceryItems(search?: string): Promise<GroceryItemOption[]> {
+export async function getGroceryItems(
+  search?: string,
+  groceryTypeId?: string
+): Promise<GroceryItemOption[]> {
   const items = await prisma.groceryItem.findMany({
-    where: search
-      ? {
-          OR: [
-            { name: { contains: search, mode: "insensitive" } },
-            {
-              aliases: {
-                some: { alias: { contains: search, mode: "insensitive" } },
+    where: {
+      ...(groceryTypeId ? { groceryTypeId } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              {
+                aliases: {
+                  some: { alias: { contains: search, mode: "insensitive" } },
+                },
               },
-            },
-          ],
-        }
-      : undefined,
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, defaultUnit: true },
+            ],
+          }
+        : {}),
+    },
+    orderBy: [{ groceryType: { sortOrder: "asc" } }, { name: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      defaultUnit: true,
+      groceryTypeId: true,
+      groceryType: { select: { name: true } },
+    },
     take: 50,
   });
-  return items;
+  return items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    defaultUnit: item.defaultUnit,
+    groceryTypeId: item.groceryTypeId,
+    groceryTypeName: item.groceryType.name,
+  }));
 }
 
 export async function findOrCreateGroceryItem(
@@ -69,9 +89,18 @@ export async function findOrCreateGroceryItem(
     };
   }
 
+  const otherType = await prisma.groceryType.findUnique({
+    where: { name: "Other" },
+    select: { id: true },
+  });
+  if (!otherType) {
+    throw new Error("GroceryType 'Other' not found");
+  }
+
   const created = await prisma.groceryItem.create({
     data: {
       name: capitalized,
+      groceryTypeId: otherType.id,
       aliases:
         alias && normalize(alias) !== normalized
           ? { create: [{ alias: normalize(alias) }] }

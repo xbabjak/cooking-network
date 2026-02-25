@@ -11,6 +11,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createPost, updatePost, deletePost } from "@/lib/actions/posts";
 import { getGroceryItems, type GroceryItemOption } from "@/lib/grocery-items";
+import { groupGroceryItemsForAutocomplete } from "@/lib/grocery-autocomplete";
 
 type Ingredient = {
   rowId: string;
@@ -97,14 +98,20 @@ export function PostForm({
     );
   }
 
-  function setIngredientGroceryItem(i: number, item: GroceryItemOption | null) {
+  function setIngredientGroceryItem(
+    i: number,
+    item: GroceryItemOption | null,
+    /** When no match: use this as display name (e.g. what user typed) so we don’t keep a stale name. */
+    typedValue?: string
+  ) {
     setIngredients((prev) =>
       prev.map((ing, idx) =>
         idx === i
           ? {
               ...ing,
               groceryItemId: item?.id,
-              groceryItemName: item != null ? item.name : (ing.groceryItemName ?? ""),
+              groceryItemName:
+                item != null ? item.name : (typedValue ?? ing.groceryItemName ?? ""),
             }
           : ing
       )
@@ -261,15 +268,25 @@ export function PostForm({
             </div>
             {ingredients.map((ing, i) => {
               const items = groceryItemsMap[ing.rowId] ?? initialGroceryItems;
-              const autocompleteData = items.map((item) => ({
-                value: item.name,
-                label: item.name,
-              }));
+              const autocompleteData = groupGroceryItemsForAutocomplete(items);
               return (
               <div key={ing.rowId} className="flex gap-2 mt-2 items-end">
                 <Autocomplete
                   placeholder="Search or type to add new"
                   data={autocompleteData}
+                  styles={{
+                    groupLabel: {
+                      fontWeight: 600,
+                      fontSize: "var(--mantine-font-size-xs)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      color: "var(--mantine-color-dimmed)",
+                      paddingBlock: "var(--mantine-spacing-xs)",
+                      paddingInline: "var(--mantine-spacing-sm)",
+                      borderBottom: "1px solid var(--mantine-color-default-border)",
+                      backgroundColor: "var(--mantine-color-default-hover)",
+                    },
+                  }}
                   value={ing.groceryItemName ?? ""}
                   onChange={async (value) => {
                     updateIngredient(i, "groceryItemName", value);
@@ -278,9 +295,9 @@ export function PostForm({
                       const match = fetched.find(
                         (it) => it.name.toLowerCase() === value.toLowerCase()
                       );
-                      setIngredientGroceryItem(i, match ?? null);
+                      setIngredientGroceryItem(i, match ?? null, value);
                     } else {
-                      setIngredientGroceryItem(i, null);
+                      setIngredientGroceryItem(i, null, value);
                     }
                   }}
                   onOptionSubmit={(value) => {

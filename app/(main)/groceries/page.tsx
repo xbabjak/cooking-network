@@ -15,8 +15,13 @@ export default async function GroceriesPage() {
   const [groceries, initialGroceryItems] = await Promise.all([
     prisma.grocery.findMany({
       where: { userId: session.user.id },
-      include: { groceryItem: true },
-      orderBy: { groceryItem: { name: "asc" } },
+      include: {
+        groceryItem: { include: { groceryType: true } },
+      },
+      orderBy: [
+        { groceryItem: { groceryType: { sortOrder: "asc" } } },
+        { groceryItem: { name: "asc" } },
+      ],
     }),
     getGroceryItems(),
   ]);

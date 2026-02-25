@@ -7,14 +7,27 @@ const adapter = new PrismaPg({
 });
 const prisma = new PrismaClient({ adapter });
 
-async function findOrCreateGroceryItem(name: string) {
+async function getGroceryTypeMap(): Promise<Record<string, string>> {
+  const types = await prisma.groceryType.findMany({
+    select: { id: true, name: true },
+  });
+  return Object.fromEntries(types.map((t) => [t.name, t.id]));
+}
+
+async function findOrCreateGroceryItem(name: string, groceryTypeId: string) {
   const capitalized = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
   const existing = await prisma.groceryItem.findFirst({
     where: { name: { equals: capitalized, mode: "insensitive" } },
   });
-  if (existing) return existing;
+  if (existing) {
+    await prisma.groceryItem.update({
+      where: { id: existing.id },
+      data: { groceryTypeId },
+    });
+    return prisma.groceryItem.findUniqueOrThrow({ where: { id: existing.id } });
+  }
   return prisma.groceryItem.create({
-    data: { name: capitalized },
+    data: { name: capitalized, groceryTypeId },
   });
 }
 
@@ -90,24 +103,31 @@ async function main() {
     "Coconut water", "Almond milk", "Oat milk", "Green tea", "Espresso",
   ];
 
-  const allGroceryNames = [
-    ...vegetables,
-    ...fruits,
-    ...dairyAndEggs,
-    ...meatPoultryFish,
-    ...grainsPastaBread,
-    ...oilsVinegarSauces,
-    ...spicesAndHerbs,
-    ...pantryCanned,
-    ...baking,
-    ...condimentsAndOther,
-    ...beverages,
+  const typeMap = await getGroceryTypeMap();
+  const categoryEntries: [string, string[]][] = [
+    ["Vegetables", vegetables],
+    ["Fruits", fruits],
+    ["Dairy & eggs", dairyAndEggs],
+    ["Meat, poultry & fish", meatPoultryFish],
+    ["Grains, pasta & bread", grainsPastaBread],
+    ["Oils, vinegar & sauces", oilsVinegarSauces],
+    ["Spices & herbs", spicesAndHerbs],
+    ["Pantry & canned", pantryCanned],
+    ["Baking", baking],
+    ["Condiments & other", condimentsAndOther],
+    ["Beverages", beverages],
   ];
 
-  for (const name of allGroceryNames) {
-    await findOrCreateGroceryItem(name);
+  let itemCount = 0;
+  for (const [typeName, names] of categoryEntries) {
+    const typeId = typeMap[typeName];
+    if (!typeId) throw new Error(`GroceryType not found: ${typeName}`);
+    for (const name of names) {
+      await findOrCreateGroceryItem(name, typeId);
+      itemCount++;
+    }
   }
-  console.log("Seeded grocery items:", allGroceryNames.length);
+  console.log("Seeded grocery items:", itemCount);
 
   const recipes = [
     {
@@ -166,11 +186,14 @@ async function main() {
   });
   const existingNames = new Set(existing.map((e) => e.name));
 
+  const otherTypeId = typeMap["Other"];
+  if (!otherTypeId) throw new Error("GroceryType 'Other' not found");
+
   for (const r of recipes) {
     if (existingNames.has(r.name)) continue;
     const ingredientData = await Promise.all(
       r.ingredients.map(async (i) => {
-        const item = await findOrCreateGroceryItem(i.name);
+        const item = await findOrCreateGroceryItem(i.name, otherTypeId);
         return { groceryItemId: item.id, quantity: i.quantity, unit: i.unit };
       })
     );
