@@ -35,6 +35,9 @@ export async function getFeedPosts(limit = 50) {
       author: {
         select: { id: true, name: true, username: true, image: true },
       },
+      recipe: {
+        select: { imageUrl: true },
+      },
     },
   });
 }

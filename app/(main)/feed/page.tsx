@@ -29,16 +29,30 @@ export default async function FeedPage() {
               ? `/u/${author.username}`
               : `/u/me?id=${author.id}`;
 
+            const previewImage =
+              post.recipe?.imageUrl ?? post.imageUrls?.[0];
+
             return (
               <article
                 key={post.id}
                 className="border border-border rounded-lg p-4 hover:border-primary/30 transition-colors"
               >
                 <Link href={`/post/${post.id}`} className="block">
-                  <h2 className="font-semibold text-lg">{post.title}</h2>
-                  <p className="text-muted line-clamp-2 mt-1">
-                    {post.content}
-                  </p>
+                  <div className="flex gap-4">
+                    {previewImage && (
+                      <img
+                        src={previewImage}
+                        alt=""
+                        className="w-20 h-20 object-cover rounded flex-shrink-0"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h2 className="font-semibold text-lg">{post.title}</h2>
+                      <p className="text-muted line-clamp-2 mt-1">
+                        {post.content}
+                      </p>
+                    </div>
+                  </div>
                 </Link>
                 <div className="mt-3 flex items-center gap-2">
                   <FeedPostAuthorLink

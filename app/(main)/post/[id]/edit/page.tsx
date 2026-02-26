@@ -22,6 +22,7 @@ export default async function EditPostPage({ params }: Props) {
     ? {
         name: post.recipe.name,
         description: post.recipe.description ?? "",
+        imageUrl: post.recipe.imageUrl ?? "",
         ingredients: post.recipe.ingredients.map((i) => ({
           groceryItemId: i.groceryItemId,
           groceryItemName: i.groceryItem.name,

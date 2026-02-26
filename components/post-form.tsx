@@ -30,6 +30,7 @@ type Props = {
   initialRecipe?: {
     name: string;
     description: string;
+    imageUrl?: string;
     ingredients: Omit<Ingredient, "rowId">[];
   };
   initialGroceryItems: GroceryItemOption[];
@@ -53,6 +54,9 @@ export function PostForm({
   const [recipeName, setRecipeName] = useState(initialRecipe?.name ?? "");
   const [recipeDescription, setRecipeDescription] = useState(
     initialRecipe?.description ?? ""
+  );
+  const [recipeImageUrl, setRecipeImageUrl] = useState(
+    initialRecipe?.imageUrl ?? ""
   );
   const [ingredients, setIngredients] = useState<Ingredient[]>(() => {
     const list =
@@ -134,6 +138,7 @@ export function PostForm({
     if (type === "recipe") {
       formData.set("recipeName", recipeName);
       formData.set("recipeDescription", recipeDescription);
+      formData.set("recipeImageUrl", recipeImageUrl);
       formData.set(
         "recipeIngredients",
         JSON.stringify(
@@ -255,6 +260,27 @@ export function PostForm({
             value={recipeDescription}
             onChange={(e) => setRecipeDescription(e.currentTarget.value)}
           />
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Preview picture URL
+            </label>
+            <TextInput
+              type="url"
+              value={recipeImageUrl}
+              onChange={(e) => setRecipeImageUrl(e.currentTarget.value)}
+              placeholder="https://..."
+              className="flex-1"
+            />
+            {recipeImageUrl.startsWith("http") && (
+              <div className="mt-2">
+                <img
+                  src={recipeImageUrl}
+                  alt=""
+                  className="h-20 w-20 object-cover rounded"
+                />
+              </div>
+            )}
+          </div>
           <div>
             <div className="flex justify-between items-center mb-1">
               <label className="text-sm">Ingredients</label>

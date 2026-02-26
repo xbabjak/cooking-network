@@ -69,7 +69,16 @@ export default async function PostPage({ params }: Props) {
       </div>
       {post.recipe && (
         <div className="mt-8 p-4 border border-border rounded-lg bg-surface-alt">
-          <h2 className="font-semibold text-lg">Recipe: {post.recipe.name}</h2>
+          <div className="flex gap-4 items-start">
+            {post.recipe.imageUrl && (
+              <img
+                src={post.recipe.imageUrl}
+                alt=""
+                className="w-20 h-20 object-cover rounded flex-shrink-0"
+              />
+            )}
+            <div>
+              <h2 className="font-semibold text-lg">Recipe: {post.recipe.name}</h2>
           {post.recipe.description && (
             <p className="text-muted mt-1">
               {post.recipe.description}
@@ -91,6 +100,8 @@ export default async function PostPage({ params }: Props) {
               skipConfirmFromSettings={skipDoneCookingConfirm}
             />
           )}
+            </div>
+          </div>
         </div>
       )}
       {isAuthor && (

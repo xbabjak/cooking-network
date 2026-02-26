@@ -23,6 +23,7 @@ const createSchema = z.object({
   type: z.enum(["story", "recipe"]).optional(),
   recipeName: z.string().optional(),
   recipeDescription: z.string().optional(),
+  recipeImageUrl: z.union([z.string().url(), z.literal("")]).optional(),
   recipeIngredients: z.array(recipeIngredientSchema).optional(),
 });
 
@@ -43,6 +44,7 @@ export async function createPost(formData: FormData) {
     type: formData.get("type") || "story",
     recipeName: formData.get("recipeName") || undefined,
     recipeDescription: formData.get("recipeDescription") || undefined,
+    recipeImageUrl: formData.get("recipeImageUrl") || undefined,
     recipeIngredients: formData.get("recipeIngredients")
       ? JSON.parse(formData.get("recipeIngredients") as string)
       : undefined,
@@ -50,7 +52,7 @@ export async function createPost(formData: FormData) {
   const parsed = createSchema.safeParse(raw);
   if (!parsed.success) return { error: "Invalid data" };
 
-  const { title, content, imageUrls, type, recipeName, recipeDescription, recipeIngredients } =
+  const { title, content, imageUrls, type, recipeName, recipeDescription, recipeImageUrl, recipeIngredients } =
     parsed.data;
 
   let recipeId: string | null = null;
@@ -77,6 +79,7 @@ export async function createPost(formData: FormData) {
       data: {
         name: recipeName,
         description: recipeDescription ?? null,
+        imageUrl: recipeImageUrl || null,
         authorId: session.user.id,
         ingredients: { create: ingredientData },
       },
@@ -121,6 +124,7 @@ export async function updatePost(formData: FormData) {
     type: formData.get("type") ?? existing.type,
     recipeName: formData.get("recipeName") || undefined,
     recipeDescription: formData.get("recipeDescription") || undefined,
+    recipeImageUrl: formData.get("recipeImageUrl") || undefined,
     recipeIngredients: formData.get("recipeIngredients")
       ? JSON.parse(formData.get("recipeIngredients") as string)
       : undefined,
@@ -128,7 +132,7 @@ export async function updatePost(formData: FormData) {
   const parsed = updateSchema.safeParse(raw);
   if (!parsed.success) return { error: "Invalid data" };
 
-  const { title, content, imageUrls, type, recipeName, recipeDescription, recipeIngredients } =
+  const { title, content, imageUrls, type, recipeName, recipeDescription, recipeImageUrl, recipeIngredients } =
     parsed.data;
 
   let recipeId = existing.recipeId;
@@ -157,6 +161,7 @@ export async function updatePost(formData: FormData) {
         data: {
           name: recipeName,
           description: recipeDescription ?? null,
+          imageUrl: recipeImageUrl || null,
           ingredients: {
             deleteMany: {},
             create: ingredientData,
@@ -168,6 +173,7 @@ export async function updatePost(formData: FormData) {
         data: {
           name: recipeName,
           description: recipeDescription ?? null,
+          imageUrl: recipeImageUrl || null,
           authorId: session.user.id,
           ingredients: { create: ingredientData },
         },
