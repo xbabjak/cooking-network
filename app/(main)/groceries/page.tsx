@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getGroceryItems } from "@/lib/grocery-items";
 import { GroceryList } from "@/components/grocery-list";
+import { AddFromReceiptButton } from "@/components/add-from-receipt";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -30,14 +31,17 @@ export default async function GroceriesPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-bold">My Groceries</h1>
-        <Link
-          href="/recommend"
-          className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground font-medium rounded-md"
-        >
-          What can I cook?
-        </Link>
+        <div className="flex items-center gap-2">
+          <AddFromReceiptButton />
+          <Link
+            href="/recommend"
+            className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground font-medium rounded-md"
+          >
+            What can I cook?
+          </Link>
+        </div>
       </div>
 
       {lowStock.length > 0 && (

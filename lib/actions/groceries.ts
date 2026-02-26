@@ -138,6 +138,71 @@ export async function decrementGrocery(id: string) {
   return { success: true };
 }
 
+const receiptItemSchema = z.object({
+  name: z.string().min(1).max(100),
+  quantity: z.number().min(0),
+});
+
+export async function addGroceriesFromReceipt(
+  items: { name: string; quantity: number }[]
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return { error: "No items to add" };
+  }
+
+  const userId = session.user.id;
+  let added = 0;
+
+  for (const raw of items) {
+    const parsed = receiptItemSchema.safeParse({
+      name: typeof raw.name === "string" ? raw.name.trim() : "",
+      quantity:
+        typeof raw.quantity === "number" && Number.isFinite(raw.quantity)
+          ? raw.quantity
+          : 1,
+    });
+    if (!parsed.success || !parsed.data.name) continue;
+
+    const { name, quantity } = parsed.data;
+    const qty = Math.max(0, quantity);
+
+    try {
+      const { id: groceryItemId } = await findOrCreateGroceryItem(name);
+      const existing = await prisma.grocery.findFirst({
+        where: { userId, groceryItemId },
+      });
+      if (existing) {
+        await prisma.grocery.update({
+          where: { id: existing.id },
+          data: { quantity: existing.quantity + qty },
+        });
+      } else {
+        await prisma.grocery.create({
+          data: {
+            userId,
+            groceryItemId,
+            unit: "items",
+            quantity: qty,
+            lowThreshold: 0,
+          },
+        });
+      }
+      added++;
+    } catch {
+      // skip item on error, continue with rest
+    }
+  }
+
+  revalidatePath("/groceries");
+  if (added === 0) {
+    return { error: "No items could be added. Please try again." };
+  }
+  return { success: true, added };
+}
+
 export async function consumeRecipeIngredients(recipeId: string) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { error: "Unauthorized" };
