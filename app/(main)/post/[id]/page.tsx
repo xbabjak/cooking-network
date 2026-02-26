@@ -5,6 +5,7 @@ import { getPostById } from "@/lib/posts";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { DoneCookingButton } from "@/components/done-cooking-button";
+import { sanitizeHtml } from "@/lib/html-utils";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -64,9 +65,10 @@ export default async function PostPage({ params }: Props) {
           ))}
         </div>
       )}
-      <div className="mt-6 prose dark:prose-invert max-w-none whitespace-pre-wrap">
-        {post.content}
-      </div>
+      <div
+        className="mt-6 prose dark:prose-invert max-w-none"
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
+      />
       {post.recipe && (
         <div className="mt-8 p-4 border border-border rounded-lg bg-surface-alt">
           <div className="flex gap-4 items-start">

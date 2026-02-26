@@ -36,6 +36,7 @@ export default async function EditPostPage({ params }: Props) {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Edit post</h1>
       <PostForm
+        key={post.id}
         postId={post.id}
         initialTitle={post.title}
         initialContent={post.content}

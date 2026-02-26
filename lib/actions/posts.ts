@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { findOrCreateGroceryItem } from "@/lib/grocery-items";
+import { sanitizeHtml } from "@/lib/html-utils";
 import { z } from "zod";
 
 const recipeIngredientSchema = z.object({
@@ -90,7 +91,7 @@ export async function createPost(formData: FormData) {
   await prisma.post.create({
     data: {
       title,
-      content,
+      content: sanitizeHtml(content),
       imageUrls: imageUrls ?? [],
       type: type ?? "story",
       recipeId,
@@ -186,7 +187,7 @@ export async function updatePost(formData: FormData) {
     where: { id },
     data: {
       title: title!,
-      content: content!,
+      content: sanitizeHtml(content!),
       imageUrls: imageUrls ?? [],
       type: type ?? "story",
       recipeId,

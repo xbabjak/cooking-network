@@ -13,7 +13,7 @@ export default async function NewPostPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">New post</h1>
-      <PostForm initialGroceryItems={initialGroceryItems} />
+      <PostForm key="new" initialGroceryItems={initialGroceryItems} />
     </div>
   );
 }

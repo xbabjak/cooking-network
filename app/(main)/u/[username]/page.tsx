@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPostsByAuthorId } from "@/lib/posts";
+import { stripHtml } from "@/lib/html-utils";
 import Link from "next/link";
 
 type Props = { params: Promise<{ username: string }> };
@@ -94,7 +95,7 @@ export default async function UserBlogPage({ params }: Props) {
               <Link href={`/post/${post.id}`} className="block">
                 <h3 className="font-semibold">{post.title}</h3>
                 <p className="text-muted line-clamp-2 mt-1 text-sm">
-                  {post.content}
+                  {stripHtml(post.content)}
                 </p>
                 <p className="text-muted text-xs mt-2">
                   {new Date(post.createdAt).toLocaleDateString()}

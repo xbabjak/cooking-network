@@ -1,6 +1,7 @@
 /* Mantine in a layer so Tailwind and app styles take precedence */
 @import "@mantine/core/styles.layer.css";
 @import "@mantine/notifications/styles.layer.css";
+@import "@mantine/tiptap/styles.css";
 
 @tailwind base;
 @tailwind components;

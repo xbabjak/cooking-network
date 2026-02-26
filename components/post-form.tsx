@@ -2,16 +2,22 @@
 
 import {
   TextInput,
-  Textarea,
   NumberInput,
   Select,
   Autocomplete,
+  Popover,
+  Button,
 } from "@mantine/core";
-import { useState, useCallback } from "react";
+import { RichTextEditor, Link } from "@mantine/tiptap";
+import { useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createPost, updatePost, deletePost } from "@/lib/actions/posts";
 import { getGroceryItems, type GroceryItemOption } from "@/lib/grocery-items";
 import { groupGroceryItemsForAutocomplete } from "@/lib/grocery-autocomplete";
+import { plainToHtml, sanitizeHtml, stripHtml } from "@/lib/html-utils";
 
 type Ingredient = {
   rowId: string;
@@ -36,6 +42,12 @@ type Props = {
   initialGroceryItems: GroceryItemOption[];
 };
 
+function getInitialHtml(content: string, imageUrls: string[]): string {
+  if (imageUrls.length > 0) return sanitizeHtml(plainToHtml(content, imageUrls));
+  if (/<[a-z][\s\S]*>/i.test(content)) return sanitizeHtml(content);
+  return sanitizeHtml(plainToHtml(content, []));
+}
+
 export function PostForm({
   postId,
   initialTitle = "",
@@ -47,10 +59,25 @@ export function PostForm({
 }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
-  const [content, setContent] = useState(initialContent);
-  const [imageUrls, setImageUrls] = useState<string[]>(initialImageUrls);
+  const [imageUrlPopoverOpen, setImageUrlPopoverOpen] = useState(false);
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [type, setType] = useState<"story" | "recipe">(initialType);
+
+  const initialHtml = useMemo(
+    () => getInitialHtml(initialContent ?? "", initialImageUrls ?? []),
+    [initialContent, initialImageUrls]
+  );
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    shouldRerenderOnTransaction: true,
+    extensions: [
+      StarterKit.configure({ link: false }),
+      Link,
+      Image,
+    ],
+    content: initialHtml,
+  });
   const [recipeName, setRecipeName] = useState(initialRecipe?.name ?? "");
   const [recipeDescription, setRecipeDescription] = useState(
     initialRecipe?.description ?? ""
@@ -78,12 +105,11 @@ export function PostForm({
     return items;
   }, []);
 
-  function addImage() {
-    if (imageUrlInput.startsWith("http")) {
-      setImageUrls((prev) =>
-        prev.length < 5 ? [...prev, imageUrlInput] : prev
-      );
+  function insertImage(url: string) {
+    if (url && url.startsWith("http") && editor) {
+      editor.chain().focus().setImage({ src: url }).run();
       setImageUrlInput("");
+      setImageUrlPopoverOpen(false);
     }
   }
 
@@ -129,11 +155,16 @@ export function PostForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    const htmlContent = editor?.getHTML() ?? "";
+    if (!stripHtml(htmlContent).trim()) {
+      setError("Content is required");
+      return;
+    }
     setSubmitting(true);
     const formData = new FormData();
     formData.set("title", title);
-    formData.set("content", content);
-    formData.set("imageUrls", JSON.stringify(imageUrls));
+    formData.set("content", htmlContent);
+    formData.set("imageUrls", JSON.stringify([]));
     formData.set("type", type);
     if (type === "recipe") {
       formData.set("recipeName", recipeName);
@@ -189,54 +220,72 @@ export function PostForm({
         required
         maxLength={200}
       />
-      <Textarea
-        label="Content"
-        value={content}
-        onChange={(e) => setContent(e.currentTarget.value)}
-        required
-        autosize
-        minRows={6}
-      />
       <div>
-        <label className="block text-sm font-medium mb-1">Image URLs (max 5)</label>
-        <div className="flex gap-2">
-          <TextInput
-            type="url"
-            value={imageUrlInput}
-            onChange={(e) => setImageUrlInput(e.currentTarget.value)}
-            placeholder="https://..."
-            className="flex-1"
-          />
-          <button
-            type="button"
-            onClick={addImage}
-            className="px-4 py-2 border border-border rounded-md hover:bg-hover"
-          >
-            Add
-          </button>
-        </div>
-        {imageUrls.length > 0 && (
-          <ul className="mt-2 flex flex-wrap gap-2">
-            {imageUrls.map((url, i) => (
-              <li key={i} className="relative">
-                <img
-                  src={url}
-                  alt=""
-                  className="h-20 w-20 object-cover rounded"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setImageUrls((prev) => prev.filter((_, j) => j !== i))
-                  }
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-error text-white rounded-full text-xs"
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <label className="block text-sm font-medium mb-1">Content</label>
+        <RichTextEditor editor={editor}>
+          <RichTextEditor.Toolbar>
+            <RichTextEditor.ControlsGroup>
+              <RichTextEditor.Bold />
+              <RichTextEditor.Italic />
+              <RichTextEditor.Underline />
+              <RichTextEditor.Strikethrough />
+              <RichTextEditor.ClearFormatting />
+            </RichTextEditor.ControlsGroup>
+            <RichTextEditor.ControlsGroup>
+              <RichTextEditor.H1 />
+              <RichTextEditor.H2 />
+              <RichTextEditor.H3 />
+            </RichTextEditor.ControlsGroup>
+            <RichTextEditor.ControlsGroup>
+              <RichTextEditor.BulletList />
+              <RichTextEditor.OrderedList />
+              <RichTextEditor.Blockquote />
+              <RichTextEditor.Hr />
+            </RichTextEditor.ControlsGroup>
+            <RichTextEditor.ControlsGroup>
+              <RichTextEditor.Link />
+              <RichTextEditor.Unlink />
+              <Popover
+                opened={imageUrlPopoverOpen}
+                onChange={setImageUrlPopoverOpen}
+                position="bottom"
+              >
+                <Popover.Target>
+                  <RichTextEditor.Control
+                    onClick={() => setImageUrlPopoverOpen((o) => !o)}
+                    title="Insert image"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </RichTextEditor.Control>
+                </Popover.Target>
+                <Popover.Dropdown>
+                  <div className="flex gap-2 p-2">
+                    <TextInput
+                      type="url"
+                      placeholder="https://..."
+                      value={imageUrlInput}
+                      onChange={(e) => setImageUrlInput(e.currentTarget.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), insertImage(imageUrlInput))}
+                      className="flex-1"
+                    />
+                    <Button size="sm" onClick={() => insertImage(imageUrlInput)}>
+                      Insert
+                    </Button>
+                  </div>
+                </Popover.Dropdown>
+              </Popover>
+            </RichTextEditor.ControlsGroup>
+            <RichTextEditor.ControlsGroup>
+              <RichTextEditor.Undo />
+              <RichTextEditor.Redo />
+            </RichTextEditor.ControlsGroup>
+          </RichTextEditor.Toolbar>
+          <RichTextEditor.Content />
+        </RichTextEditor>
       </div>
       <Select
         label="Type"

@@ -1,5 +1,6 @@
 import { getFeedPosts } from "@/lib/posts";
 import { FeedPostAuthorLink } from "@/components/feed-post-author-link";
+import { stripHtml, getFirstImageFromHtml } from "@/lib/html-utils";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -30,7 +31,9 @@ export default async function FeedPage() {
               : `/u/me?id=${author.id}`;
 
             const previewImage =
-              post.recipe?.imageUrl ?? post.imageUrls?.[0];
+              post.recipe?.imageUrl ??
+              post.imageUrls?.[0] ??
+              getFirstImageFromHtml(post.content);
 
             return (
               <article
@@ -49,7 +52,7 @@ export default async function FeedPage() {
                     <div className="min-w-0 flex-1">
                       <h2 className="font-semibold text-lg">{post.title}</h2>
                       <p className="text-muted line-clamp-2 mt-1">
-                        {post.content}
+                        {stripHtml(post.content)}
                       </p>
                     </div>
                   </div>
