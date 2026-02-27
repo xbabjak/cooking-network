@@ -1,6 +1,13 @@
 "use client";
 
-import { Autocomplete, NumberInput, TextInput } from "@mantine/core";
+import {
+  Autocomplete,
+  Button,
+  Modal,
+  NumberInput,
+  TextInput,
+} from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { useState, useCallback } from "react";
 import {
   addGrocery,
@@ -29,6 +36,8 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
   const [groceries, setGroceries] = useState(initial);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editModalOpened, { open: openEditModal, close: closeEditModal }] =
+    useDisclosure(false);
   const [groceryItemSearch, setGroceryItemSearch] = useState("");
   const [selectedGroceryItemId, setSelectedGroceryItemId] = useState<string | null>(null);
   const [groceryItems, setGroceryItems] = useState(initialGroceryItems);
@@ -111,6 +120,7 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
           : g
       )
     );
+    closeEditModal();
     resetForm();
     window.location.reload();
   }
@@ -145,65 +155,58 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
         </button>
       )}
 
-      {(showForm || editingId) && (
+      {showForm && !editingId && (
         <form
-          onSubmit={editingId ? handleUpdate : handleAdd}
+          onSubmit={handleAdd}
           className="mb-6 p-4 border border-border rounded-lg space-y-3"
         >
           {error && (
             <p className="text-sm text-error">{error}</p>
           )}
           <div className="grid grid-cols-2 gap-3">
-            {editingId ? (
-              <div className="col-span-2">
-                <label className="block text-sm font-medium mb-1">Item</label>
-                <p className="text-foreground py-2">{groceryItemSearch}</p>
-              </div>
-            ) : (
-              <Autocomplete
-                label="Item"
-                placeholder="Search or type to add new"
-                data={autocompleteData}
-                styles={{
-                  groupLabel: {
-                    fontWeight: 600,
-                    fontSize: "var(--mantine-font-size-xs)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    color: "var(--mantine-color-dimmed)",
-                    paddingBlock: "var(--mantine-spacing-xs)",
-                    paddingInline: "var(--mantine-spacing-sm)",
-                    borderBottom: "1px solid var(--mantine-color-default-border)",
-                    backgroundColor: "var(--mantine-color-default-hover)",
-                  },
-                }}
-                value={groceryItemSearch}
-                onChange={async (value) => {
-                  setGroceryItemSearch(value);
-                  if (value.length >= 1) {
-                    const fetched = await fetchGroceryItems(value);
-                    const match = fetched.find(
-                      (i) => i.name.toLowerCase() === value.toLowerCase()
-                    );
-                    setSelectedGroceryItemId(match?.id ?? null);
-                  } else {
-                    setGroceryItems(initialGroceryItems);
-                    setSelectedGroceryItemId(null);
-                  }
-                }}
-                onOptionSubmit={(value) => {
-                  const item = groceryItems.find(
-                    (i) => i.name.toLowerCase() === (value ?? "").toLowerCase()
+            <Autocomplete
+              label="Item"
+              placeholder="Search or type to add new"
+              data={autocompleteData}
+              styles={{
+                groupLabel: {
+                  fontWeight: 600,
+                  fontSize: "var(--mantine-font-size-xs)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: "var(--mantine-color-dimmed)",
+                  paddingBlock: "var(--mantine-spacing-xs)",
+                  paddingInline: "var(--mantine-spacing-sm)",
+                  borderBottom: "1px solid var(--mantine-color-default-border)",
+                  backgroundColor: "var(--mantine-color-default-hover)",
+                },
+              }}
+              value={groceryItemSearch}
+              onChange={async (value) => {
+                setGroceryItemSearch(value);
+                if (value.length >= 1) {
+                  const fetched = await fetchGroceryItems(value);
+                  const match = fetched.find(
+                    (i) => i.name.toLowerCase() === value.toLowerCase()
                   );
-                  if (item) {
-                    setGroceryItemSearch(item.name);
-                    setSelectedGroceryItemId(item.id);
-                  }
-                }}
-                filter={({ options }) => options}
-                required
-              />
-            )}
+                  setSelectedGroceryItemId(match?.id ?? null);
+                } else {
+                  setGroceryItems(initialGroceryItems);
+                  setSelectedGroceryItemId(null);
+                }
+              }}
+              onOptionSubmit={(value) => {
+                const item = groceryItems.find(
+                  (i) => i.name.toLowerCase() === (value ?? "").toLowerCase()
+                );
+                if (item) {
+                  setGroceryItemSearch(item.name);
+                  setSelectedGroceryItemId(item.id);
+                }
+              }}
+              filter={({ options }) => options}
+              required
+            />
             <TextInput
               label="Unit"
               value={unit}
@@ -228,12 +231,12 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
             />
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
               type="submit"
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-md"
+              className="bg-primary hover:bg-primary-hover text-primary-foreground"
             >
-              {editingId ? "Save" : "Add"}
-            </button>
+              Add
+            </Button>
             <button
               type="button"
               onClick={resetForm}
@@ -244,6 +247,68 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
           </div>
         </form>
       )}
+
+      <Modal
+        opened={editModalOpened}
+        onClose={() => {
+          closeEditModal();
+          resetForm();
+        }}
+        title="Edit grocery"
+        size="sm"
+      >
+        <form onSubmit={handleUpdate} className="space-y-3">
+          {error && (
+            <p className="text-sm text-error">{error}</p>
+          )}
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">Item</label>
+              <p className="text-foreground py-2">{groceryItemSearch}</p>
+            </div>
+            <TextInput
+              label="Unit"
+              value={unit}
+              onChange={(e) => setUnit(e.currentTarget.value)}
+              placeholder="e.g. items, L, kg"
+            />
+            <NumberInput
+              label="Quantity"
+              min={0}
+              step={0.5}
+              value={quantity}
+              onChange={(value) => setQuantity(typeof value === "string" ? parseFloat(value) || 0 : value ?? 0)}
+            />
+            <NumberInput
+              label="Remind when below"
+              min={0}
+              step={0.5}
+              value={lowThreshold}
+              onChange={(value) =>
+                setLowThreshold(typeof value === "string" ? parseFloat(value) || 0 : value ?? 0)
+              }
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              className="bg-primary hover:bg-primary-hover text-primary-foreground"
+            >
+              Save
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              onClick={() => {
+                closeEditModal();
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {(() => {
         const byType = groceries.reduce<Record<string, Grocery[]>>((acc, g) => {
@@ -293,7 +358,10 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
                         </button>
                         <button
                           type="button"
-                          onClick={() => startEdit(g)}
+                          onClick={() => {
+                            startEdit(g);
+                            openEditModal();
+                          }}
                           className="text-sm text-primary hover:underline"
                         >
                           Edit
