@@ -104,7 +104,7 @@ export function AddFromReceiptButton() {
       <Button
         variant="filled"
         onClick={open}
-        className="bg-primary hover:bg-primary-hover text-primary-foreground"
+        className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-md"
       >
         Add from receipt
       </Button>

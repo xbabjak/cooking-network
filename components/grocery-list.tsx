@@ -230,20 +230,21 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
               }
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <Button
               type="submit"
-              className="bg-primary hover:bg-primary-hover text-primary-foreground"
+              className="bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2 rounded-md"
             >
               Add
             </Button>
-            <button
+            <Button
               type="button"
+              variant="default"
+              className="px-4 py-2 rounded-md border border-border hover:bg-hover"
               onClick={resetForm}
-              className="px-4 py-2 border border-border rounded-md hover:bg-hover"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -292,13 +293,14 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
           <div className="flex gap-2">
             <Button
               type="submit"
-              className="bg-primary hover:bg-primary-hover text-primary-foreground"
+              className="bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2"
             >
               Save
             </Button>
             <Button
               type="button"
               variant="default"
+              className="px-4 py-2"
               onClick={() => {
                 closeEditModal();
                 resetForm();
@@ -362,14 +364,14 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
                             startEdit(g);
                             openEditModal();
                           }}
-                          className="text-sm text-primary hover:underline"
+                          className="text-sm text-primary hover:underline rounded"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDelete(g.id)}
-                          className="text-sm text-error hover:underline"
+                          className="text-sm text-error hover:underline rounded"
                         >
                           Remove
                         </button>
