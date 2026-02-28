@@ -89,18 +89,18 @@ export async function findOrCreateGroceryItem(
     };
   }
 
-  const otherType = await prisma.groceryType.findUnique({
-    where: { name: "Other" },
+  const mineType = await prisma.groceryType.findUnique({
+    where: { name: "Mine" },
     select: { id: true },
   });
-  if (!otherType) {
-    throw new Error("GroceryType 'Other' not found");
+  if (!mineType) {
+    throw new Error("GroceryType 'Mine' not found");
   }
 
   const created = await prisma.groceryItem.create({
     data: {
       name: capitalized,
-      groceryTypeId: otherType.id,
+      groceryTypeId: mineType.id,
       aliases:
         alias && normalize(alias) !== normalized
           ? { create: [{ alias: normalize(alias) }] }

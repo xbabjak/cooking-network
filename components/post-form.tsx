@@ -118,24 +118,26 @@ export function PostForm({
     setRecipeName(draft.recipeName ?? "");
     setRecipeDescription(draft.recipeDescription ?? "");
     setRecipeImageUrl(draft.recipeImageUrl ?? "");
-    if (draft.ingredients?.length) {
+    if (draft.ingredients !== undefined) {
       setIngredients(
-        draft.ingredients.map((ing) => ({
-          ...ing,
-          groceryItemName: ing.name ?? "",
-          rowId: crypto.randomUUID(),
-        }))
+        draft.ingredients.length
+          ? draft.ingredients.map((ing) => ({
+              ...ing,
+              groceryItemName: ing.name ?? "",
+              rowId: crypto.randomUUID(),
+            }))
+          : [{ rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "" }]
       );
     }
     restoredContentRef.current = draft.content;
   }, [postId]);
 
-  // Apply restored content when editor is ready
+  // Apply restored content when editor is ready (include postId so content is applied when switching posts)
   useEffect(() => {
     if (!editor || restoredContentRef.current === null) return;
     editor.commands.setContent(restoredContentRef.current);
     restoredContentRef.current = null;
-  }, [editor]);
+  }, [editor, postId]);
 
   // Keep editor HTML in ref for debounced save
   useEffect(() => {
