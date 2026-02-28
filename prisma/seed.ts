@@ -38,6 +38,8 @@ async function main() {
     "Kale", "Leek", "Asparagus", "Eggplant", "Tomatoes", "Lettuce", "Cucumber",
     "Garlic", "Radish", "Beet", "Brussels sprouts", "Cauliflower", "Collard greens",
     "Fennel", "Okra", "Parsnip", "Pumpkin", "Swiss chard", "Turnip", "Watercress",
+    "Green onion", "Shallot", "Bok choy", "Arugula", "Romaine", "Cherry tomatoes",
+    "Butternut squash", "Scallion", "Snow peas", "Edamame", "Bean sprouts", "Water chestnuts",
   ];
   const fruits = [
     "Lemon", "Lime", "Apple", "Banana", "Orange", "Strawberries", "Blueberries",
@@ -45,29 +47,34 @@ async function main() {
     "Plum", "Grapes", "Cranberries", "Coconut", "Cherry", "Grapefruit", "Kiwi",
     "Melon", "Watermelon", "Cantaloupe", "Apricot", "Fig", "Pomegranate", "Papaya",
     "Passion fruit", "Dragon fruit", "Dates", "Prunes", "Raisins",
+    "Nectarine", "Clementine", "Tangerine", "Persimmon", "Rhubarb", "Lychee", "Guava",
   ];
   const dairyAndEggs = [
     "Eggs", "Butter", "Milk", "Cream", "Yogurt", "Parmesan", "Cheddar", "Mozzarella",
     "Feta", "Sour cream", "Cottage cheese", "Ricotta", "Cream cheese", "Goat cheese",
     "Swiss cheese", "Brie", "Heavy cream", "Half and half", "Condensed milk",
+    "Mascarpone", "Gruyère", "Provolone", "Blue cheese", "Ghee", "Kefir",
   ];
   const meatPoultryFish = [
     "Chicken", "Beef", "Pork", "Lamb", "Bacon", "Sausage", "Salmon", "Tuna", "Shrimp",
     "Cod", "Tilapia", "Halibut", "Turkey", "Ground beef", "Ground pork", "Ham",
     "Chicken breast", "Chicken thigh", "Pork chop", "Steak", "Lobster", "Crab",
     "Anchovies", "Sardines", "White fish", "Duck", "Veal",
+    "Ground turkey", "Scallops", "Mussels", "Calamari", "Turkey breast",
   ];
   const grainsPastaBread = [
     "Flour", "Rice", "Pasta", "Bread", "Oats", "Couscous", "Quinoa", "Breadcrumbs",
     "All-purpose flour", "Whole wheat flour", "Cornmeal", "Polenta", "Barley",
     "Bulgur", "Noodles", "Spaghetti", "Penne", "Lasagna noodles", "Tortilla",
     "Pita bread", "Bagel", "Croissant", "Cereal", "Granola",
+    "Orzo", "Farro", "Arborio rice", "Sourdough bread", "English muffin", "Flatbread",
   ];
   const oilsVinegarSauces = [
     "Olive oil", "Vegetable oil", "Canola oil", "Coconut oil", "Sesame oil",
     "White vinegar", "Balsamic vinegar", "Apple cider vinegar", "Rice vinegar",
     "Soy sauce", "Tomato paste", "Fish sauce", "Oyster sauce", "Teriyaki sauce",
     "Hot sauce", "Worcestershire sauce", "Tomato sauce",
+    "Avocado oil", "Mirin", "Hoisin sauce", "Chili oil",
   ];
   const spicesAndHerbs = [
     "Salt", "Black pepper", "Paprika", "Cumin", "Cinnamon", "Nutmeg", "Oregano",
@@ -76,6 +83,10 @@ async function main() {
     "Cardamom", "Cloves", "Allspice", "Mustard seeds", "Fennel seeds", "Dill",
     "Sage", "Mint", "Tarragon", "Marjoram", "Smoked paprika", "Garlic powder",
     "Onion powder", "Italian seasoning", "Curry powder", "Vanilla bean",
+    "Sumac", "Za'atar", "Saffron", "White pepper",
+    "Star anise", "Juniper berries", "Lavender", "Nigella seeds", "Poppy seeds",
+    "Celery salt", "Lemon zest", "Orange zest", "Chipotle powder", "Anise",
+    "Fenugreek", "Mace", "Pink peppercorns", "Herbes de Provence", "Five-spice powder",
   ];
   const pantryCanned = [
     "Canned tomatoes", "Black beans", "Kidney beans", "Chickpeas", "Lentils",
@@ -84,23 +95,28 @@ async function main() {
     "Capers", "Sun-dried tomatoes", "Canned corn", "Canned beans", "Broth",
     "Salsa", "Chipotle peppers", "Green chiles", "Artichoke hearts", "Pesto",
     "Nutella", "Marmalade", "Molasses", "Agave syrup", "Golden syrup",
+    "Cannellini beans", "Pinto beans", "Navy beans", "Diced tomatoes", "Crushed tomatoes",
+    "Tomato puree", "Almonds", "Cashews", "Walnuts", "Pecans", "Pine nuts",
   ];
   const baking = [
     "Sugar", "Brown sugar", "Baking powder", "Baking soda", "Vanilla extract",
     "Cocoa powder", "Chocolate", "Chocolate chips", "Powdered sugar", "Cornstarch",
     "Yeast", "Almond extract", "Cream of tartar", "Shortening", "Pie crust",
     "Phyllo dough", "Puff pastry", "Condensed milk", "Evaporated milk",
+    "Bread flour", "Cake flour", "Dark chocolate", "Milk chocolate", "Coconut flakes",
   ];
   const condimentsAndOther = [
     "Mustard", "Ketchup", "Mayonnaise", "Relish", "Barbecue sauce", "Sriracha",
     "Horseradish", "Tartar sauce", "Ranch dressing", "Vinaigrette", "Hummus",
     "Guacamole", "Sour cream", "Pickles", "Jalapeños",
+    "Dijon mustard", "Buffalo sauce",
   ];
   const beverages = [
     "Coffee", "Tea", "Juice", "Orange juice", "Lemon juice", "Lime juice",
     "Apple juice", "Cranberry juice", "Tomato juice", "Soda", "Tonic water",
     "Beer", "Wine", "Red wine", "White wine", "Vinegar", "Sparkling water",
     "Coconut water", "Almond milk", "Oat milk", "Green tea", "Espresso",
+    "Cold brew", "Chai tea", "Herbal tea", "Iced tea", "Mineral water",
   ];
 
   const typeMap = await getGroceryTypeMap();
