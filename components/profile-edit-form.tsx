@@ -1,8 +1,13 @@
 "use client";
 
 import { TextInput, Textarea, PasswordInput } from "@mantine/core";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import {
+  getProfileDraft,
+  setProfileDraft,
+  clearProfileDraft,
+} from "@/lib/draft-storage";
 
 type Props = {
   initialName: string;
@@ -35,6 +40,32 @@ export function ProfileEditForm({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    const draft = getProfileDraft();
+    if (!draft) return;
+    setName(draft.name);
+    setUsername(draft.username);
+    setImage(draft.image);
+    setBio(draft.bio);
+    setSkipDoneCookingConfirm(draft.skipDoneCookingConfirm);
+  }, []);
+
+  // Debounced persist draft to localStorage
+  useEffect(() => {
+    const ms = 1000;
+    const id = setTimeout(() => {
+      setProfileDraft({
+        name,
+        username,
+        image,
+        bio,
+        skipDoneCookingConfirm,
+      });
+    }, ms);
+    return () => clearTimeout(id);
+  }, [name, username, image, bio, skipDoneCookingConfirm]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -105,6 +136,7 @@ export function ProfileEditForm({
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      clearProfileDraft();
       router.refresh();
     } catch {
       setError("Something went wrong.");

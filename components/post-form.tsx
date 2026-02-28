@@ -12,9 +12,15 @@ import { RichTextEditor, Link } from "@mantine/tiptap";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createPost, updatePost, deletePost } from "@/lib/actions/posts";
+import {
+  getPostDraftKey,
+  getPostDraft,
+  setPostDraft,
+  clearPostDraft,
+} from "@/lib/draft-storage";
 import { getGroceryItems, type GroceryItemOption } from "@/lib/grocery-items";
 import { groupGroceryItemsForAutocomplete } from "@/lib/grocery-autocomplete";
 import { plainToHtml, sanitizeHtml, stripHtml } from "@/lib/html-utils";
@@ -98,6 +104,87 @@ export function PostForm({
   const [groceryItemsMap, setGroceryItemsMap] = useState<Record<string, GroceryItemOption[]>>({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const editorContentRef = useRef(initialHtml);
+  const restoredContentRef = useRef<string | null>(null);
+
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    const key = getPostDraftKey(postId);
+    const draft = getPostDraft(key);
+    if (!draft) return;
+    setTitle(draft.title);
+    setType(draft.type);
+    setRecipeName(draft.recipeName ?? "");
+    setRecipeDescription(draft.recipeDescription ?? "");
+    setRecipeImageUrl(draft.recipeImageUrl ?? "");
+    if (draft.ingredients?.length) {
+      setIngredients(
+        draft.ingredients.map((ing) => ({
+          ...ing,
+          groceryItemName: ing.name ?? "",
+          rowId: crypto.randomUUID(),
+        }))
+      );
+    }
+    restoredContentRef.current = draft.content;
+  }, [postId]);
+
+  // Apply restored content when editor is ready
+  useEffect(() => {
+    if (!editor || restoredContentRef.current === null) return;
+    editor.commands.setContent(restoredContentRef.current);
+    restoredContentRef.current = null;
+  }, [editor]);
+
+  // Keep editor HTML in ref for debounced save
+  useEffect(() => {
+    if (!editor) return;
+    const handler = () => {
+      editorContentRef.current = editor.getHTML();
+    };
+    editor.on("update", handler);
+    return () => {
+      editor.off("update", handler);
+    };
+  }, [editor]);
+
+  // Debounced persist draft to localStorage
+  const draftKey = getPostDraftKey(postId);
+  useEffect(() => {
+    const ms = 1000;
+    const id = setTimeout(() => {
+      const content =
+        editor?.getHTML() ?? editorContentRef.current ?? "";
+      setPostDraft(draftKey, {
+        title,
+        content,
+        type,
+        recipeName: type === "recipe" ? recipeName : undefined,
+        recipeDescription: type === "recipe" ? recipeDescription : undefined,
+        recipeImageUrl: type === "recipe" ? recipeImageUrl : undefined,
+        ingredients:
+          type === "recipe"
+            ? ingredients.map((i) => ({
+                groceryItemId: i.groceryItemId,
+                name: i.groceryItemName?.trim() || undefined,
+                quantity: i.quantity,
+                unit: i.unit,
+              }))
+            : undefined,
+      });
+    }, ms);
+    return () => clearTimeout(id);
+  }, [
+    draftKey,
+    title,
+    type,
+    recipeName,
+    recipeDescription,
+    recipeImageUrl,
+    ingredients,
+    editor,
+  ]);
 
   const fetchGroceryItems = useCallback(async (rowId: string, search: string) => {
     const items = await getGroceryItems(search || undefined);
@@ -195,6 +282,7 @@ export function PostForm({
       setError(result.error);
       return;
     }
+    clearPostDraft(getPostDraftKey(postId));
     if (postId) router.push(`/post/${postId}`);
     else router.push("/feed");
     router.refresh();
@@ -206,6 +294,23 @@ export function PostForm({
     await deletePost(postId);
     router.push("/feed");
     router.refresh();
+  }
+
+  function handleDiscardDraft() {
+    if (postId) return;
+    if (!confirm("Remove unfinished changes? Your draft will be cleared.")) return;
+    clearPostDraft(getPostDraftKey());
+    restoredContentRef.current = null;
+    setTitle("");
+    setType("story");
+    setRecipeName("");
+    setRecipeDescription("");
+    setRecipeImageUrl("");
+    setIngredients([
+      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "" },
+    ]);
+    setError("");
+    editor?.commands.setContent("<p></p>");
   }
 
   return (
@@ -416,7 +521,7 @@ export function PostForm({
           </div>
         </div>
       )}
-      <div className="flex gap-3">
+      <div className="flex gap-3 flex-wrap">
         <button
           type="submit"
           disabled={submitting}
@@ -424,7 +529,7 @@ export function PostForm({
         >
           {postId ? "Save" : "Publish"}
         </button>
-        {postId && (
+        {postId ? (
           <button
             type="button"
             onClick={handleDelete}
@@ -432,6 +537,15 @@ export function PostForm({
             className="px-4 py-2 border border-error text-error hover:bg-hover rounded-md"
           >
             Delete
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleDiscardDraft}
+            disabled={submitting}
+            className="px-4 py-2 border border-border text-muted-foreground hover:bg-hover rounded-md"
+          >
+            Remove unfinished changes
           </button>
         )}
       </div>
