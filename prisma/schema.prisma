@@ -19,11 +19,12 @@ model User {
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
-  posts    Post[]
-  groceries Grocery[]
-  recipes  Recipe[]
+  accounts          Account[]
+  sessions          Session[]
+  posts             Post[]
+  groceries         Grocery[]
+  recipes           Recipe[]
+  recipeCookCounts  UserRecipeCookCount[]
 }
 
 model Account {
@@ -132,9 +133,22 @@ model Recipe {
   authorId    String?
   createdAt   DateTime @default(now())
 
-  author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  posts    Post[]
+  author     User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  posts      Post[]
   ingredients RecipeIngredient[]
+  cookCounts UserRecipeCookCount[]
+}
+
+model UserRecipeCookCount {
+  userId   String
+  recipeId String
+  count    Int      @default(0)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recipeId])
+  @@index([recipeId])
 }
 
 model RecipeIngredient {

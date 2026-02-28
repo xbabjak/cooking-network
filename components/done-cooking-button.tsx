@@ -8,12 +8,14 @@ import { consumeRecipeIngredients } from "@/lib/actions/groceries";
 type Props = {
   recipeId: string;
   recipeName?: string;
+  postId?: string;
   skipConfirmFromSettings?: boolean;
 };
 
 export function DoneCookingButton({
   recipeId,
   recipeName,
+  postId,
   skipConfirmFromSettings = false,
 }: Props) {
   const router = useRouter();
@@ -26,7 +28,7 @@ export function DoneCookingButton({
     setError(null);
     setLoading(true);
     try {
-      const result = await consumeRecipeIngredients(recipeId);
+      const result = await consumeRecipeIngredients(recipeId, postId);
       if (result?.error) {
         setError(result.error);
         return;

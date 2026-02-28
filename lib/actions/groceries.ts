@@ -203,7 +203,10 @@ export async function addGroceriesFromReceipt(
   return { success: true, added };
 }
 
-export async function consumeRecipeIngredients(recipeId: string) {
+export async function consumeRecipeIngredients(
+  recipeId: string,
+  postId?: string
+) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { error: "Unauthorized" };
 
@@ -227,6 +230,15 @@ export async function consumeRecipeIngredients(recipeId: string) {
     }
   }
 
+  await prisma.userRecipeCookCount.upsert({
+    where: {
+      userId_recipeId: { userId, recipeId },
+    },
+    create: { userId, recipeId, count: 1 },
+    update: { count: { increment: 1 } },
+  });
+
   revalidatePath("/groceries");
+  if (postId) revalidatePath(`/post/${postId}`);
   return { success: true };
 }

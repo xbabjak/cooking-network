@@ -26,6 +26,29 @@ export default async function PostPage({ params }: Props) {
     skipDoneCookingConfirm = user?.skipDoneCookingConfirm ?? false;
   }
 
+  let publicCookCount = 0;
+  let userCookCount = 0;
+  if (post.recipe) {
+    const [aggregate, userCountRow] = await Promise.all([
+      prisma.userRecipeCookCount.aggregate({
+        where: { recipeId: post.recipe.id },
+        _sum: { count: true },
+      }),
+      session?.user?.id
+        ? prisma.userRecipeCookCount.findUnique({
+            where: {
+              userId_recipeId: {
+                userId: session.user.id,
+                recipeId: post.recipe.id,
+              },
+            },
+          })
+        : null,
+    ]);
+    publicCookCount = aggregate._sum.count ?? 0;
+    userCookCount = userCountRow?.count ?? 0;
+  }
+
   return (
     <article className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold">{post.title}</h1>
@@ -53,6 +76,11 @@ export default async function PostPage({ params }: Props) {
         </Link>
         <span>{new Date(post.createdAt).toLocaleDateString()}</span>
       </div>
+      {post.recipe && (
+        <p className="mt-1 text-xs text-muted-foreground/80">
+          Cooked {publicCookCount} time{publicCookCount !== 1 ? "s" : ""}.
+        </p>
+      )}
       {post.imageUrls.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
           {post.imageUrls.map((url) => (
@@ -96,11 +124,17 @@ export default async function PostPage({ params }: Props) {
             ))}
           </ul>
           {session?.user && (
-            <DoneCookingButton
+            <>
+              <p className="mt-1 text-sm text-muted-foreground">
+                You&apos;ve made this {userCookCount} time{userCookCount !== 1 ? "s" : ""}.
+              </p>
+              <DoneCookingButton
               recipeId={post.recipe.id}
               recipeName={post.recipe.name}
+              postId={post.id}
               skipConfirmFromSettings={skipDoneCookingConfirm}
             />
+            </>
           )}
             </div>
           </div>
