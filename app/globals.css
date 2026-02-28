@@ -89,3 +89,38 @@ body {
   border-width: 1.5px;
   padding: 10px 14px;
 }
+
+/* Prose (richtext) in dark mode: use app foreground for readable text */
+[data-mantine-color-scheme="dark"] .prose {
+  color: var(--color-foreground);
+}
+[data-mantine-color-scheme="dark"] .prose p,
+[data-mantine-color-scheme="dark"] .prose li,
+[data-mantine-color-scheme="dark"] .prose blockquote {
+  color: var(--color-foreground);
+}
+[data-mantine-color-scheme="dark"] .prose strong {
+  color: var(--color-foreground);
+}
+[data-mantine-color-scheme="dark"] .prose a {
+  color: var(--color-primary);
+}
+[data-mantine-color-scheme="dark"] .prose h1,
+[data-mantine-color-scheme="dark"] .prose h2,
+[data-mantine-color-scheme="dark"] .prose h3,
+[data-mantine-color-scheme="dark"] .prose h4,
+[data-mantine-color-scheme="dark"] .prose h5,
+[data-mantine-color-scheme="dark"] .prose h6 {
+  color: var(--color-foreground);
+}
+[data-mantine-color-scheme="dark"] .prose code {
+  color: var(--color-foreground);
+  background: var(--color-surface-alt);
+}
+[data-mantine-color-scheme="dark"] .prose pre {
+  color: var(--color-foreground);
+  background: var(--color-surface-alt);
+}
+[data-mantine-color-scheme="dark"] .prose hr {
+  border-color: var(--color-border);
+}
