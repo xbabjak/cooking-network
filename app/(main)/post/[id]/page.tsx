@@ -15,8 +15,12 @@ export default async function PostPage({ params }: Props) {
   const session = await getServerSession(authOptions);
   const post = await getPostById(id);
   if (!post) notFound();
+  if (post.isPrivate && post.authorId !== session?.user?.id) notFound();
 
   const isAuthor = session?.user?.id === post.authorId;
+  const canViewRecipe =
+    post.recipe &&
+    (!post.recipe.isPrivate || post.recipe.authorId === session?.user?.id);
 
   let skipDoneCookingConfirm = false;
   if (session?.user?.id) {
@@ -30,7 +34,7 @@ export default async function PostPage({ params }: Props) {
   let publicCookCount = 0;
   let userCookCount = 0;
   let bookmarkExists = false;
-  if (post.recipe) {
+  if (post.recipe && canViewRecipe) {
     const [aggregate, userCountRow, bookmark] = await Promise.all([
       prisma.userRecipeCookCount.aggregate({
         where: { recipeId: post.recipe.id },
@@ -89,7 +93,7 @@ export default async function PostPage({ params }: Props) {
         </Link>
         <span>{new Date(post.createdAt).toLocaleDateString()}</span>
       </div>
-      {post.recipe && (
+      {post.recipe && canViewRecipe && (
         <p className="mt-1 text-xs text-muted-foreground/80">
           Cooked {publicCookCount} time{publicCookCount !== 1 ? "s" : ""}.
         </p>
@@ -112,6 +116,9 @@ export default async function PostPage({ params }: Props) {
       />
       {post.recipe && (
         <div className="mt-8 p-4 border border-border rounded-lg bg-surface-alt">
+          {!canViewRecipe ? (
+            <p className="text-muted text-sm">This recipe is private.</p>
+          ) : (
           <div className="flex gap-4 items-start justify-between">
             <div className="flex gap-4 items-start min-w-0 flex-1">
             {post.recipe.imageUrl && (
@@ -196,6 +203,7 @@ export default async function PostPage({ params }: Props) {
               </div>
             )}
           </div>
+          )}
         </div>
       )}
       {isAuthor && (

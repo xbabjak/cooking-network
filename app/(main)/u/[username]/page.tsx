@@ -38,7 +38,7 @@ export default async function UserBlogPage({ params }: Props) {
 
   if (!user) notFound();
 
-  const posts = await getPostsByAuthorId(user.id);
+  const posts = await getPostsByAuthorId(user.id, 20, session?.user?.id);
 
   const isOwnBlog = session?.user?.id === user.id;
 

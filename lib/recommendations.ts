@@ -19,6 +19,9 @@ export async function getRecommendations(userId: string): Promise<RecipeWithMatc
       select: { groceryItemId: true },
     }),
     prisma.recipe.findMany({
+      where: {
+        OR: [{ isPrivate: false }, { authorId: userId }],
+      },
       include: {
         ingredients: { include: { groceryItem: true } },
         posts: { take: 1, select: { id: true } },

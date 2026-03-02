@@ -1,3 +1,5 @@
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getFeedPosts } from "@/lib/posts";
 import { FeedPostAuthorLink } from "@/components/feed-post-author-link";
 import { stripHtml, getFirstImageFromHtml } from "@/lib/html-utils";
@@ -12,7 +14,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function FeedPage() {
-  const posts = await getFeedPosts(50);
+  const session = await getServerSession(authOptions);
+  const posts = await getFeedPosts(50, session?.user?.id);
 
   return (
     <div className="space-y-6">

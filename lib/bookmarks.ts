@@ -17,7 +17,10 @@ export async function getBookmarkedRecipes(userId: string): Promise<BookmarkedRe
     include: {
       recipe: {
         include: {
-          posts: { take: 1, select: { id: true } },
+          posts: {
+            take: 1,
+            select: { id: true, isPrivate: true, authorId: true },
+          },
         },
       },
     },
@@ -25,6 +28,15 @@ export async function getBookmarkedRecipes(userId: string): Promise<BookmarkedRe
 
   return bookmarks
     .filter((b) => b.recipe.posts[0] != null)
+    .filter(
+      (b) => !b.recipe.isPrivate || b.recipe.authorId === userId
+    )
+    .filter(
+      (b) => {
+        const post = b.recipe.posts[0]!;
+        return !post.isPrivate || post.authorId === userId;
+      }
+    )
     .map((b) => ({
       recipe: {
         id: b.recipe.id,

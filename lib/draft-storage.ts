@@ -21,6 +21,7 @@ export type PostDraft = {
   recipeName?: string;
   recipeDescription?: string;
   recipeImageUrl?: string;
+  postPrivate?: boolean;
   ingredients?: PostDraftIngredient[];
 };
 
@@ -54,6 +55,12 @@ export function getPostDraft(key: string): PostDraft | null {
         typeof d.recipeDescription === "string" ? d.recipeDescription : undefined,
       recipeImageUrl:
         typeof d.recipeImageUrl === "string" ? d.recipeImageUrl : undefined,
+      postPrivate:
+        typeof d.postPrivate === "boolean"
+          ? d.postPrivate
+          : typeof d.recipePrivate === "boolean"
+            ? d.recipePrivate
+            : undefined,
       ingredients: Array.isArray(d.ingredients)
         ? (d.ingredients as unknown[]).map((item) => {
             const ing = item as Record<string, unknown>;

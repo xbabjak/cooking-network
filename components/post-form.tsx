@@ -42,10 +42,12 @@ type Props = {
   initialContent?: string;
   initialImageUrls?: string[];
   initialType?: "story" | "recipe";
+  initialPostPrivate?: boolean;
   initialRecipe?: {
     name: string;
     description: string;
     imageUrl?: string;
+    isPrivate?: boolean;
     ingredients: Omit<Ingredient, "rowId">[];
   };
   initialGroceryItems: GroceryItemOption[];
@@ -63,6 +65,7 @@ export function PostForm({
   initialContent = "",
   initialImageUrls = [],
   initialType = "story",
+  initialPostPrivate,
   initialRecipe,
   initialGroceryItems,
 }: Props) {
@@ -94,6 +97,9 @@ export function PostForm({
   const [recipeImageUrl, setRecipeImageUrl] = useState(
     initialRecipe?.imageUrl ?? ""
   );
+  const [postPrivate, setPostPrivate] = useState(
+    initialPostPrivate ?? initialRecipe?.isPrivate ?? false
+  );
   const [ingredients, setIngredients] = useState<Ingredient[]>(() => {
     const list =
       initialRecipe?.ingredients?.length
@@ -123,6 +129,7 @@ export function PostForm({
     setRecipeName(draft.recipeName ?? "");
     setRecipeDescription(draft.recipeDescription ?? "");
     setRecipeImageUrl(draft.recipeImageUrl ?? "");
+    setPostPrivate(draft.postPrivate ?? false);
     if (draft.ingredients !== undefined) {
       setIngredients(
         draft.ingredients.length
@@ -172,6 +179,7 @@ export function PostForm({
         recipeName: type === "recipe" ? recipeName : undefined,
         recipeDescription: type === "recipe" ? recipeDescription : undefined,
         recipeImageUrl: type === "recipe" ? recipeImageUrl : undefined,
+        postPrivate,
         ingredients:
           type === "recipe"
             ? ingredients.map((i) => ({
@@ -193,6 +201,7 @@ export function PostForm({
     recipeName,
     recipeDescription,
     recipeImageUrl,
+    postPrivate,
     ingredients,
     editor,
   ]);
@@ -264,6 +273,7 @@ export function PostForm({
     formData.set("content", htmlContent);
     formData.set("imageUrls", JSON.stringify([]));
     formData.set("type", type);
+    formData.set("postPrivate", postPrivate ? "1" : "0");
     if (type === "recipe") {
       formData.set("recipeName", recipeName);
       formData.set("recipeDescription", recipeDescription);
@@ -319,6 +329,7 @@ export function PostForm({
     setRecipeName("");
     setRecipeDescription("");
     setRecipeImageUrl("");
+    setPostPrivate(false);
     setIngredients([
       { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "", optional: false, oneOfGroupId: undefined },
     ]);
@@ -427,6 +438,12 @@ export function PostForm({
           { value: "story", label: "Story" },
           { value: "recipe", label: "Recipe" },
         ]}
+      />
+      <Checkbox
+        label="Make this private"
+        description="Only you will see this in the feed and on your blog."
+        checked={postPrivate}
+        onChange={(e) => setPostPrivate(e.currentTarget.checked)}
       />
       {type === "recipe" && (
         <div className="space-y-3 p-4 border border-border rounded-lg bg-surface-alt">

@@ -70,6 +70,7 @@ model Post {
   type      String   @default("story") // "story" | "recipe"
   recipeId  String?
   authorId  String
+  isPrivate Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -132,6 +133,7 @@ model Recipe {
   description String?
   imageUrl    String?
   authorId    String?
+  isPrivate   Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   author     User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)

@@ -27,6 +27,7 @@ const createSchema = z.object({
   recipeName: z.string().optional(),
   recipeDescription: z.string().optional(),
   recipeImageUrl: z.union([z.string().url(), z.literal("")]).optional(),
+  postPrivate: z.boolean().optional(),
   recipeIngredients: z.array(recipeIngredientSchema).optional(),
 });
 
@@ -48,6 +49,7 @@ export async function createPost(formData: FormData) {
     recipeName: formData.get("recipeName") || undefined,
     recipeDescription: formData.get("recipeDescription") || undefined,
     recipeImageUrl: formData.get("recipeImageUrl") || undefined,
+    postPrivate: formData.get("postPrivate") === "1",
     recipeIngredients: formData.get("recipeIngredients")
       ? JSON.parse(formData.get("recipeIngredients") as string)
       : undefined,
@@ -55,7 +57,7 @@ export async function createPost(formData: FormData) {
   const parsed = createSchema.safeParse(raw);
   if (!parsed.success) return { error: "Invalid data" };
 
-  const { title, content, imageUrls, type, recipeName, recipeDescription, recipeImageUrl, recipeIngredients } =
+  const { title, content, imageUrls, type, recipeName, recipeDescription, recipeImageUrl, postPrivate, recipeIngredients } =
     parsed.data;
 
   let recipeId: string | null = null;
@@ -86,6 +88,7 @@ export async function createPost(formData: FormData) {
         description: recipeDescription ?? null,
         imageUrl: recipeImageUrl || null,
         authorId: session.user.id,
+        isPrivate: postPrivate ?? false,
         ingredients: { create: ingredientData },
       },
     });
@@ -100,6 +103,7 @@ export async function createPost(formData: FormData) {
       type: type ?? "story",
       recipeId,
       authorId: session.user.id,
+      isPrivate: postPrivate ?? false,
     },
   });
 
@@ -130,6 +134,7 @@ export async function updatePost(formData: FormData) {
     recipeName: formData.get("recipeName") || undefined,
     recipeDescription: formData.get("recipeDescription") || undefined,
     recipeImageUrl: formData.get("recipeImageUrl") || undefined,
+    postPrivate: formData.get("postPrivate") === "1",
     recipeIngredients: formData.get("recipeIngredients")
       ? JSON.parse(formData.get("recipeIngredients") as string)
       : undefined,
@@ -137,7 +142,7 @@ export async function updatePost(formData: FormData) {
   const parsed = updateSchema.safeParse(raw);
   if (!parsed.success) return { error: "Invalid data" };
 
-  const { title, content, imageUrls, type, recipeName, recipeDescription, recipeImageUrl, recipeIngredients } =
+  const { title, content, imageUrls, type, recipeName, recipeDescription, recipeImageUrl, postPrivate, recipeIngredients } =
     parsed.data;
 
   let recipeId = existing.recipeId;
@@ -163,12 +168,17 @@ export async function updatePost(formData: FormData) {
       })
     );
     if (existing.recipeId) {
+      const existingRecipe = await prisma.recipe.findUnique({
+        where: { id: existing.recipeId },
+        select: { isPrivate: true },
+      });
       await prisma.recipe.update({
         where: { id: existing.recipeId },
         data: {
           name: recipeName,
           description: recipeDescription ?? null,
           imageUrl: recipeImageUrl || null,
+          isPrivate: postPrivate ?? existingRecipe?.isPrivate ?? false,
           ingredients: {
             deleteMany: {},
             create: ingredientData,
@@ -182,6 +192,7 @@ export async function updatePost(formData: FormData) {
           description: recipeDescription ?? null,
           imageUrl: recipeImageUrl || null,
           authorId: session.user.id,
+          isPrivate: postPrivate ?? false,
           ingredients: { create: ingredientData },
         },
       });
@@ -197,6 +208,7 @@ export async function updatePost(formData: FormData) {
       imageUrls: imageUrls ?? [],
       type: type ?? "story",
       recipeId,
+      isPrivate: postPrivate ?? existing.isPrivate ?? false,
     },
   });
 

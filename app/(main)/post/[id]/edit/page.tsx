@@ -23,6 +23,7 @@ export default async function EditPostPage({ params }: Props) {
         name: post.recipe.name,
         description: post.recipe.description ?? "",
         imageUrl: post.recipe.imageUrl ?? "",
+        isPrivate: post.recipe.isPrivate ?? false,
         ingredients: post.recipe.ingredients.map((i) => ({
           groceryItemId: i.groceryItemId,
           groceryItemName: i.groceryItem.name,
@@ -44,6 +45,7 @@ export default async function EditPostPage({ params }: Props) {
         initialContent={post.content}
         initialImageUrls={post.imageUrls}
         initialType={post.type as "story" | "recipe"}
+        initialPostPrivate={post.isPrivate ?? false}
         initialRecipe={initialRecipe}
         initialGroceryItems={initialGroceryItems}
       />
