@@ -5,6 +5,7 @@ import { getPostById } from "@/lib/posts";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { DoneCookingButton } from "@/components/done-cooking-button";
+import { BookmarkButton } from "@/components/bookmark-button";
 import { sanitizeHtml } from "@/lib/html-utils";
 
 type Props = { params: Promise<{ id: string }> };
@@ -28,8 +29,9 @@ export default async function PostPage({ params }: Props) {
 
   let publicCookCount = 0;
   let userCookCount = 0;
+  let bookmarkExists = false;
   if (post.recipe) {
-    const [aggregate, userCountRow] = await Promise.all([
+    const [aggregate, userCountRow, bookmark] = await Promise.all([
       prisma.userRecipeCookCount.aggregate({
         where: { recipeId: post.recipe.id },
         _sum: { count: true },
@@ -44,9 +46,20 @@ export default async function PostPage({ params }: Props) {
             },
           })
         : null,
+      session?.user?.id
+        ? prisma.userRecipeBookmark.findUnique({
+            where: {
+              userId_recipeId: {
+                userId: session.user.id,
+                recipeId: post.recipe.id,
+              },
+            },
+          })
+        : null,
     ]);
     publicCookCount = aggregate._sum.count ?? 0;
     userCookCount = userCountRow?.count ?? 0;
+    bookmarkExists = !!bookmark;
   }
 
   return (
@@ -99,7 +112,8 @@ export default async function PostPage({ params }: Props) {
       />
       {post.recipe && (
         <div className="mt-8 p-4 border border-border rounded-lg bg-surface-alt">
-          <div className="flex gap-4 items-start">
+          <div className="flex gap-4 items-start justify-between">
+            <div className="flex gap-4 items-start min-w-0 flex-1">
             {post.recipe.imageUrl && (
               <img
                 src={post.recipe.imageUrl}
@@ -107,7 +121,7 @@ export default async function PostPage({ params }: Props) {
                 className="w-20 h-20 object-cover rounded flex-shrink-0"
               />
             )}
-            <div>
+            <div className="min-w-0 flex-1">
               <h2 className="font-semibold text-lg">Recipe: {post.recipe.name}</h2>
           {post.recipe.description && (
             <p className="text-muted mt-1">
@@ -160,16 +174,27 @@ export default async function PostPage({ params }: Props) {
               <p className="mt-1 text-sm text-muted-foreground">
                 You&apos;ve made this {userCookCount} time{userCookCount !== 1 ? "s" : ""}.
               </p>
-              <DoneCookingButton
-                recipeId={post.recipe.id}
-                recipeName={post.recipe.name}
-                postId={post.id}
-                skipConfirmFromSettings={skipDoneCookingConfirm}
-                recipeIngredients={post.recipe.ingredients}
-              />
+              <div className="mt-2 flex flex-wrap gap-2 items-center">
+                <DoneCookingButton
+                  recipeId={post.recipe.id}
+                  recipeName={post.recipe.name}
+                  postId={post.id}
+                  skipConfirmFromSettings={skipDoneCookingConfirm}
+                  recipeIngredients={post.recipe.ingredients}
+                />
+              </div>
             </>
           )}
             </div>
+            </div>
+            {session?.user && (
+              <div className="shrink-0 pt-0.5">
+                <BookmarkButton
+                  recipeId={post.recipe.id}
+                  initialBookmarked={bookmarkExists}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

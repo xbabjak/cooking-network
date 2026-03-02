@@ -25,6 +25,7 @@ model User {
   groceries         Grocery[]
   recipes           Recipe[]
   recipeCookCounts  UserRecipeCookCount[]
+  bookmarks         UserRecipeBookmark[]
 }
 
 model Account {
@@ -137,6 +138,7 @@ model Recipe {
   posts      Post[]
   ingredients RecipeIngredient[]
   cookCounts UserRecipeCookCount[]
+  bookmarks  UserRecipeBookmark[]
 }
 
 model UserRecipeCookCount {
@@ -148,6 +150,19 @@ model UserRecipeCookCount {
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, recipeId])
+  @@index([recipeId])
+}
+
+model UserRecipeBookmark {
+  userId    String
+  recipeId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recipeId])
+  @@index([userId])
   @@index([recipeId])
 }
 

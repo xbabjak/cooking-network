@@ -80,6 +80,13 @@ export function Nav() {
               </Menu.Item>
               <Menu.Item
                 component={Link}
+                href="/bookmarks"
+                className="text-foreground hover:bg-hover hover:text-primary"
+              >
+                Bookmarks
+              </Menu.Item>
+              <Menu.Item
+                component={Link}
                 href="/profile/edit"
                 className="text-foreground hover:bg-hover hover:text-primary"
               >
@@ -167,6 +174,9 @@ export function Nav() {
                 onClick={closeDrawer}
               >
                 My Blog
+              </Link>
+              <Link href="/bookmarks" className={navLinkClass} onClick={closeDrawer}>
+                Bookmarks
               </Link>
               <Link href="/profile/edit" className={navLinkClass} onClick={closeDrawer}>
                 Edit profile
