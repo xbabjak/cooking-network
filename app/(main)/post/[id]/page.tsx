@@ -116,13 +116,44 @@ export default async function PostPage({ params }: Props) {
           )}
           <h3 className="font-medium mt-3">Ingredients</h3>
           <ul className="list-disc list-inside mt-1">
-            {post.recipe.ingredients.map((ing) => (
-              <li key={ing.id}>
-                {ing.groceryItem.name}
-                {ing.optional ? " (optional)" : ""}
-                {ing.quantity > 0 && ` — ${ing.quantity} ${ing.unit || ""}`}
-              </li>
-            ))}
+            {(() => {
+              const ings = post.recipe!.ingredients;
+              const seenGroups = new Set<string | null>();
+              const items: React.ReactNode[] = [];
+              for (const ing of ings) {
+                if (!ing.oneOfGroupId) {
+                  items.push(
+                    <li key={ing.id}>
+                      {ing.groceryItem.name}
+                      {ing.optional ? " (optional)" : ""}
+                      {ing.quantity > 0 && ` — ${ing.quantity} ${ing.unit || ""}`}
+                    </li>
+                  );
+                } else {
+                  if (seenGroups.has(ing.oneOfGroupId)) continue;
+                  seenGroups.add(ing.oneOfGroupId);
+                  const group = ings.filter((i) => i.oneOfGroupId === ing.oneOfGroupId);
+                  const partNodes = group.map((i, idx) => {
+                    const label = `${i.groceryItem.name}${i.quantity > 0 ? ` — ${i.quantity} ${i.unit || ""}` : ""}`;
+                    return (
+                      <span key={i.id}>
+                        {idx > 0 && (
+                          <span className="text-muted text-sm font-normal mx-1"> or </span>
+                        )}
+                        {label}
+                      </span>
+                    );
+                  });
+                  items.push(
+                    <li key={ing.oneOfGroupId!}>
+                      {partNodes}
+                      {group.some((i) => i.optional) ? " (optional)" : ""}
+                    </li>
+                  );
+                }
+              }
+              return <>{items}</>;
+            })()}
           </ul>
           {session?.user && (
             <>
@@ -130,11 +161,12 @@ export default async function PostPage({ params }: Props) {
                 You&apos;ve made this {userCookCount} time{userCookCount !== 1 ? "s" : ""}.
               </p>
               <DoneCookingButton
-              recipeId={post.recipe.id}
-              recipeName={post.recipe.name}
-              postId={post.id}
-              skipConfirmFromSettings={skipDoneCookingConfirm}
-            />
+                recipeId={post.recipe.id}
+                recipeName={post.recipe.name}
+                postId={post.id}
+                skipConfirmFromSettings={skipDoneCookingConfirm}
+                recipeIngredients={post.recipe.ingredients}
+              />
             </>
           )}
             </div>

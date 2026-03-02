@@ -29,6 +29,7 @@ export default async function EditPostPage({ params }: Props) {
           quantity: i.quantity,
           unit: i.unit,
           optional: i.optional,
+          oneOfGroupId: i.oneOfGroupId ?? undefined,
         })),
       }
     : undefined;

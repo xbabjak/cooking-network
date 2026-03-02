@@ -11,6 +11,7 @@ export type PostDraftIngredient = {
   quantity: number;
   unit: string;
   optional?: boolean;
+  oneOfGroupId?: string | null;
 };
 
 export type PostDraft = {
@@ -62,6 +63,12 @@ export function getPostDraft(key: string): PostDraft | null {
               quantity: typeof ing.quantity === "number" ? ing.quantity : 0,
               unit: typeof ing.unit === "string" ? ing.unit : "",
               optional: Boolean(ing.optional),
+              oneOfGroupId:
+                ing.oneOfGroupId === null || ing.oneOfGroupId === undefined
+                  ? undefined
+                  : typeof ing.oneOfGroupId === "string"
+                    ? ing.oneOfGroupId
+                    : undefined,
             } as PostDraftIngredient;
           })
         : undefined,

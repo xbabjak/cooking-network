@@ -33,6 +33,7 @@ type Ingredient = {
   quantity: number;
   unit: string;
   optional?: boolean;
+  oneOfGroupId?: string | null;
 };
 
 type Props = {
@@ -101,6 +102,7 @@ export function PostForm({
     return list.map((ing) => ({
       ...ing,
       optional: ing.optional ?? false,
+      oneOfGroupId: ing.oneOfGroupId ?? undefined,
       rowId: crypto.randomUUID(),
     }));
   });
@@ -128,9 +130,10 @@ export function PostForm({
               ...ing,
               groceryItemName: ing.name ?? "",
               optional: ing.optional ?? false,
+              oneOfGroupId: ing.oneOfGroupId ?? undefined,
               rowId: crypto.randomUUID(),
             }))
-          : [{ rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "" }]
+          : [{ rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "", optional: false, oneOfGroupId: undefined }]
       );
     }
     restoredContentRef.current = draft.content;
@@ -177,6 +180,7 @@ export function PostForm({
                 quantity: i.quantity,
                 unit: i.unit,
                 optional: i.optional,
+                oneOfGroupId: i.oneOfGroupId ?? undefined,
               }))
             : undefined,
       });
@@ -210,11 +214,11 @@ export function PostForm({
   function addIngredient() {
     setIngredients((prev) => [
       ...prev,
-      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "", optional: false },
+      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "", optional: false, oneOfGroupId: undefined },
     ]);
   }
 
-  function updateIngredient(i: number, field: keyof Omit<Ingredient, "rowId">, value: string | number | boolean) {
+  function updateIngredient(i: number, field: keyof Omit<Ingredient, "rowId">, value: string | number | boolean | undefined | null) {
     setIngredients((prev) =>
       prev.map((ing, idx) =>
         idx === i ? { ...ing, [field]: value } : ing
@@ -275,6 +279,7 @@ export function PostForm({
             quantity: i.quantity,
             unit: i.unit,
             optional: i.optional ?? false,
+            oneOfGroupId: i.oneOfGroupId ?? undefined,
           }))
         )
       );
@@ -315,11 +320,25 @@ export function PostForm({
     setRecipeDescription("");
     setRecipeImageUrl("");
     setIngredients([
-      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "", optional: false },
+      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "", optional: false, oneOfGroupId: undefined },
     ]);
     setError("");
     editor?.commands.setContent("<p></p>");
   }
+
+  const oneOfGroupOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const out: { value: string; label: string }[] = [];
+    for (const ing of ingredients) {
+      if (!ing.oneOfGroupId) continue;
+      const name = (ing.groceryItemName?.trim() || "").slice(0, 30) || "?";
+      if (!seen.has(ing.oneOfGroupId)) {
+        seen.add(ing.oneOfGroupId);
+        out.push({ value: ing.oneOfGroupId, label: `One of: ${name}` });
+      }
+    }
+    return [{ value: "", label: "—" }, { value: "__new__", label: "New 'one of' group" }, ...out];
+  }, [ingredients]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -515,6 +534,19 @@ export function PostForm({
                   value={ing.unit}
                   onChange={(e) => updateIngredient(i, "unit", e.currentTarget.value)}
                   w={100}
+                />
+                <Select
+                  placeholder="One of"
+                  data={oneOfGroupOptions}
+                  value={ing.oneOfGroupId ?? ""}
+                  onChange={(v) => {
+                    if (v === "__new__") updateIngredient(i, "oneOfGroupId", crypto.randomUUID());
+                    else if (v === "" || v === null) updateIngredient(i, "oneOfGroupId", undefined);
+                    else updateIngredient(i, "oneOfGroupId", v);
+                  }}
+                  allowDeselect={false}
+                  w={140}
+                  size="sm"
                 />
                 <Checkbox
                   size="sm"

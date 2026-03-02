@@ -5,11 +5,20 @@ import { useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { consumeRecipeIngredients } from "@/lib/actions/groceries";
 
+type RecipeIngredientForDone = {
+  id: string;
+  oneOfGroupId: string | null;
+  groceryItem: { name: string };
+  quantity: number;
+  unit: string;
+};
+
 type Props = {
   recipeId: string;
   recipeName?: string;
   postId?: string;
   skipConfirmFromSettings?: boolean;
+  recipeIngredients?: RecipeIngredientForDone[];
 };
 
 export function DoneCookingButton({
@@ -17,18 +26,41 @@ export function DoneCookingButton({
   recipeName,
   postId,
   skipConfirmFromSettings = false,
+  recipeIngredients = [],
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [dontAskAgain, setDontAskAgain] = useState(false);
+  const [oneOfChoices, setOneOfChoices] = useState<Record<string, string>>({});
 
-  async function consume() {
+  const oneOfGroups = (() => {
+    const withGroup = recipeIngredients.filter((ing) => ing.oneOfGroupId);
+    const groupIds = [...new Set(withGroup.map((ing) => ing.oneOfGroupId!))];
+    return groupIds.map((groupId) => ({
+      groupId,
+      ingredients: recipeIngredients.filter((ing) => ing.oneOfGroupId === groupId),
+    }));
+  })();
+
+  const standaloneIds = recipeIngredients.filter((ing) => !ing.oneOfGroupId).map((ing) => ing.id);
+
+  function buildIngredientIdsToConsume(): string[] {
+    const ids = [...standaloneIds];
+    for (const group of oneOfGroups) {
+      const chosen = oneOfChoices[group.groupId];
+      if (chosen) ids.push(chosen);
+      else if (group.ingredients.length > 0) ids.push(group.ingredients[0].id);
+    }
+    return ids;
+  }
+
+  async function consume(chosenIngredientIds?: string[]) {
     setError(null);
     setLoading(true);
     try {
-      const result = await consumeRecipeIngredients(recipeId, postId);
+      const result = await consumeRecipeIngredients(recipeId, postId, chosenIngredientIds);
       if (result?.error) {
         setError(result.error);
         return;
@@ -47,6 +79,12 @@ export function DoneCookingButton({
   }
 
   async function handleClick() {
+    if (oneOfGroups.length > 0) {
+      setOneOfChoices({});
+      setDontAskAgain(false);
+      setShowConfirm(true);
+      return;
+    }
     if (skipConfirmFromSettings) {
       await consume();
       return;
@@ -68,7 +106,8 @@ export function DoneCookingButton({
         // continue to consume even if setting save fails
       }
     }
-    await consume();
+    const ids = oneOfGroups.length > 0 ? buildIngredientIdsToConsume() : undefined;
+    await consume(ids);
   }
 
   return (
@@ -93,7 +132,7 @@ export function DoneCookingButton({
           aria-modal="true"
           aria-labelledby="confirm-title"
         >
-          <div className="mx-4 w-full max-w-md rounded-lg border border-border bg-background p-4 shadow-lg">
+          <div className="mx-4 w-full max-w-md rounded-lg border border-border bg-background p-4 shadow-lg max-h-[90vh] overflow-y-auto">
             <h2 id="confirm-title" className="font-semibold text-lg">
               Remove ingredients from inventory?
             </h2>
@@ -101,6 +140,32 @@ export function DoneCookingButton({
               Quantities will be reduced from your groceries and won&apos;t go
               below zero.
             </p>
+            {oneOfGroups.length > 0 && (
+              <div className="mt-4 space-y-3">
+                <p className="text-sm font-medium">Which ingredients did you use?</p>
+                {oneOfGroups.map(({ groupId, ingredients }) => (
+                  <fieldset key={groupId} className="space-y-1.5">
+                    <legend className="sr-only">One of: {ingredients.map((ing) => ing.groceryItem.name).join(", ")}</legend>
+                    {ingredients.map((ing) => {
+                      const label = `${ing.groceryItem.name}${ing.quantity > 0 ? ` — ${ing.quantity} ${ing.unit || ""}` : ""}`;
+                      return (
+                        <label key={ing.id} className="flex cursor-pointer items-center gap-2">
+                          <input
+                            type="radio"
+                            name={`oneOf-${groupId}`}
+                            value={ing.id}
+                            checked={(oneOfChoices[groupId] ?? ingredients[0]?.id) === ing.id}
+                            onChange={() => setOneOfChoices((prev) => ({ ...prev, [groupId]: ing.id }))}
+                            className="h-4 w-4 border-border"
+                          />
+                          <span className="text-sm">{label}</span>
+                        </label>
+                      );
+                    })}
+                  </fieldset>
+                ))}
+              </div>
+            )}
             <label className="mt-4 flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"

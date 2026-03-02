@@ -205,7 +205,8 @@ export async function addGroceriesFromReceipt(
 
 export async function consumeRecipeIngredients(
   recipeId: string,
-  postId?: string
+  postId?: string,
+  chosenIngredientIds?: string[]
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { error: "Unauthorized" };
@@ -216,8 +217,13 @@ export async function consumeRecipeIngredients(
   });
   if (!recipe) return { error: "Recipe not found" };
 
+  const ingredientsToConsume =
+    chosenIngredientIds != null && chosenIngredientIds.length > 0
+      ? recipe.ingredients.filter((ing) => chosenIngredientIds.includes(ing.id))
+      : recipe.ingredients;
+
   const userId = session.user.id;
-  for (const ing of recipe.ingredients) {
+  for (const ing of ingredientsToConsume) {
     const grocery = await prisma.grocery.findFirst({
       where: { userId, groceryItemId: ing.groceryItemId },
     });
