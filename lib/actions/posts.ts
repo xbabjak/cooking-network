@@ -13,6 +13,7 @@ const recipeIngredientSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   quantity: z.number().min(0),
   unit: z.string().optional(),
+  optional: z.boolean().optional(),
 }).refine((data) => data.groceryItemId || data.name, {
   message: "Either groceryItemId or name is required",
 });
@@ -73,6 +74,7 @@ export async function createPost(formData: FormData) {
           groceryItemId,
           quantity: i.quantity,
           unit: i.unit ?? "",
+          optional: i.optional ?? false,
         };
       })
     );
@@ -153,6 +155,7 @@ export async function updatePost(formData: FormData) {
           groceryItemId,
           quantity: i.quantity,
           unit: i.unit ?? "",
+          optional: i.optional ?? false,
         };
       })
     );

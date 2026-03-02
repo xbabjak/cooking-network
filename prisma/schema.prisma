@@ -157,6 +157,7 @@ model RecipeIngredient {
   groceryItemId  String
   quantity       Float   @default(1)
   unit           String  @default("")
+  optional       Boolean @default(false)
 
   recipe     Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   groceryItem GroceryItem @relation(fields: [groceryItemId], references: [id], onDelete: Cascade)

@@ -10,6 +10,7 @@ export type PostDraftIngredient = {
   name?: string;
   quantity: number;
   unit: string;
+  optional?: boolean;
 };
 
 export type PostDraft = {
@@ -53,7 +54,16 @@ export function getPostDraft(key: string): PostDraft | null {
       recipeImageUrl:
         typeof d.recipeImageUrl === "string" ? d.recipeImageUrl : undefined,
       ingredients: Array.isArray(d.ingredients)
-        ? (d.ingredients as PostDraftIngredient[])
+        ? (d.ingredients as unknown[]).map((item) => {
+            const ing = item as Record<string, unknown>;
+            return {
+              groceryItemId: typeof ing.groceryItemId === "string" ? ing.groceryItemId : undefined,
+              name: typeof ing.name === "string" ? ing.name : undefined,
+              quantity: typeof ing.quantity === "number" ? ing.quantity : 0,
+              unit: typeof ing.unit === "string" ? ing.unit : "",
+              optional: Boolean(ing.optional),
+            } as PostDraftIngredient;
+          })
         : undefined,
     };
   } catch {

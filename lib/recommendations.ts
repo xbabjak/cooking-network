@@ -32,10 +32,11 @@ export async function getRecommendations(userId: string): Promise<RecipeWithMatc
   const results: RecipeWithMatch[] = recipes
     .filter((r) => r.ingredients.length > 0)
     .map((recipe) => {
-      const total = recipe.ingredients.length;
+      const required = recipe.ingredients.filter((ing) => !ing.optional);
+      const total = required.length;
       const missing: string[] = [];
       let matchCount = 0;
-      for (const ing of recipe.ingredients) {
+      for (const ing of required) {
         if (userGroceryItemIds.has(ing.groceryItemId)) {
           matchCount++;
         } else {

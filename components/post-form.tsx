@@ -7,6 +7,7 @@ import {
   Autocomplete,
   Popover,
   Button,
+  Checkbox,
 } from "@mantine/core";
 import { RichTextEditor, Link } from "@mantine/tiptap";
 import { useEditor } from "@tiptap/react";
@@ -31,6 +32,7 @@ type Ingredient = {
   groceryItemName?: string;
   quantity: number;
   unit: string;
+  optional?: boolean;
 };
 
 type Props = {
@@ -98,6 +100,7 @@ export function PostForm({
         : [{ groceryItemName: "", quantity: 1, unit: "" }];
     return list.map((ing) => ({
       ...ing,
+      optional: ing.optional ?? false,
       rowId: crypto.randomUUID(),
     }));
   });
@@ -124,6 +127,7 @@ export function PostForm({
           ? draft.ingredients.map((ing) => ({
               ...ing,
               groceryItemName: ing.name ?? "",
+              optional: ing.optional ?? false,
               rowId: crypto.randomUUID(),
             }))
           : [{ rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "" }]
@@ -172,6 +176,7 @@ export function PostForm({
                 name: i.groceryItemName?.trim() || undefined,
                 quantity: i.quantity,
                 unit: i.unit,
+                optional: i.optional,
               }))
             : undefined,
       });
@@ -205,11 +210,11 @@ export function PostForm({
   function addIngredient() {
     setIngredients((prev) => [
       ...prev,
-      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "" },
+      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "", optional: false },
     ]);
   }
 
-  function updateIngredient(i: number, field: keyof Omit<Ingredient, "rowId">, value: string | number) {
+  function updateIngredient(i: number, field: keyof Omit<Ingredient, "rowId">, value: string | number | boolean) {
     setIngredients((prev) =>
       prev.map((ing, idx) =>
         idx === i ? { ...ing, [field]: value } : ing
@@ -269,6 +274,7 @@ export function PostForm({
             name: i.groceryItemName?.trim() || undefined,
             quantity: i.quantity,
             unit: i.unit,
+            optional: i.optional ?? false,
           }))
         )
       );
@@ -309,7 +315,7 @@ export function PostForm({
     setRecipeDescription("");
     setRecipeImageUrl("");
     setIngredients([
-      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "" },
+      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "", optional: false },
     ]);
     setError("");
     editor?.commands.setContent("<p></p>");
@@ -443,7 +449,7 @@ export function PostForm({
               <button
                 type="button"
                 onClick={addIngredient}
-                className="text-sm text-primary hover:underline"
+                className="shrink-0 px-3 py-1.5 text-sm border border-border text-primary hover:bg-hover rounded-md"
               >
                 + Add
               </button>
@@ -452,7 +458,7 @@ export function PostForm({
               const items = groceryItemsMap[ing.rowId] ?? initialGroceryItems;
               const autocompleteData = groupGroceryItemsForAutocomplete(items);
               return (
-              <div key={ing.rowId} className="flex gap-2 mt-2 items-end">
+              <div key={ing.rowId} className="flex gap-2 mt-2 items-center flex-wrap">
                 <Autocomplete
                   placeholder="Search or type to add new"
                   data={autocompleteData}
@@ -510,10 +516,16 @@ export function PostForm({
                   onChange={(e) => updateIngredient(i, "unit", e.currentTarget.value)}
                   w={100}
                 />
+                <Checkbox
+                  size="sm"
+                  label="Optional"
+                  checked={ing.optional ?? false}
+                  onChange={(e) => updateIngredient(i, "optional", e.currentTarget.checked)}
+                />
                 <button
                   type="button"
                   onClick={() => removeIngredient(i)}
-                  className="text-error hover:underline"
+                  className="shrink-0 px-3 py-1.5 text-sm border border-border text-error hover:bg-hover rounded-md"
                 >
                   Remove
                 </button>

@@ -28,6 +28,7 @@ export default async function EditPostPage({ params }: Props) {
           groceryItemName: i.groceryItem.name,
           quantity: i.quantity,
           unit: i.unit,
+          optional: i.optional,
         })),
       }
     : undefined;

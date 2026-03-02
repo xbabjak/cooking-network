@@ -119,6 +119,7 @@ export default async function PostPage({ params }: Props) {
             {post.recipe.ingredients.map((ing) => (
               <li key={ing.id}>
                 {ing.groceryItem.name}
+                {ing.optional ? " (optional)" : ""}
                 {ing.quantity > 0 && ` — ${ing.quantity} ${ing.unit || ""}`}
               </li>
             ))}

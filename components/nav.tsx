@@ -18,14 +18,24 @@ export function Nav() {
     setMounted(true);
   }, []);
 
+  const sessionReady = mounted && status !== "loading";
+
   const navLinks = (
     <>
       <Link href="/feed" className={navLinkClass} onClick={closeDrawer}>
         Feed
       </Link>
       <ThemeToggle />
-      {!mounted || status === "loading" ? (
-        <span className="text-muted">...</span>
+      {!sessionReady ? (
+        /* While session is loading (or before mount), show sign-in links so nav is never empty (e.g. Brave Shields blocking session) */
+        <>
+          <Link href="/login" className={navLinkClass} onClick={closeDrawer}>
+            Sign in
+          </Link>
+          <Link href="/register" className="text-primary hover:underline" onClick={closeDrawer}>
+            Sign up
+          </Link>
+        </>
       ) : session ? (
         <>
           <Link href="/post/new" className={navLinkClass} onClick={closeDrawer}>
@@ -131,8 +141,15 @@ export function Nav() {
           <Link href="/feed" className={navLinkClass} onClick={closeDrawer}>
             Feed
           </Link>
-          {!mounted || status === "loading" ? (
-            <span className="text-muted">...</span>
+          {!sessionReady ? (
+            <>
+              <Link href="/login" className={navLinkClass} onClick={closeDrawer}>
+                Sign in
+              </Link>
+              <Link href="/register" className="text-primary hover:underline" onClick={closeDrawer}>
+                Sign up
+              </Link>
+            </>
           ) : session ? (
             <>
               <Link href="/post/new" className={navLinkClass} onClick={closeDrawer}>
