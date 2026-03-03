@@ -31,7 +31,89 @@ async function findOrCreateGroceryItem(name: string, groceryTypeId: string) {
   });
 }
 
+async function seedUnits() {
+  const weightId = "weight";
+  const volumeId = "volume";
+  const countId = "count";
+
+  await prisma.unitCategory.upsert({
+    where: { id: weightId },
+    create: { id: weightId, name: "weight", baseUnitSymbol: "kg" },
+    update: {},
+  });
+  await prisma.unitCategory.upsert({
+    where: { id: volumeId },
+    create: { id: volumeId, name: "volume", baseUnitSymbol: "L" },
+    update: {},
+  });
+  await prisma.unitCategory.upsert({
+    where: { id: countId },
+    create: { id: countId, name: "count", baseUnitSymbol: "items" },
+    update: {},
+  });
+
+  const units: Array<{ symbol: string; label: string; unitCategoryId: string; factorToBase: number }> = [
+    { symbol: "kg", label: "Kilogram", unitCategoryId: weightId, factorToBase: 1 },
+    { symbol: "g", label: "Gram", unitCategoryId: weightId, factorToBase: 0.001 },
+    { symbol: "oz", label: "Ounce", unitCategoryId: weightId, factorToBase: 0.0283495 },
+    { symbol: "lb", label: "Pound", unitCategoryId: weightId, factorToBase: 0.453592 },
+    { symbol: "L", label: "Liter", unitCategoryId: volumeId, factorToBase: 1 },
+    { symbol: "ml", label: "Milliliter", unitCategoryId: volumeId, factorToBase: 0.001 },
+    { symbol: "cup", label: "Cup", unitCategoryId: volumeId, factorToBase: 0.236588 },
+    { symbol: "tbsp", label: "Tablespoon", unitCategoryId: volumeId, factorToBase: 0.0147868 },
+    { symbol: "tsp", label: "Teaspoon", unitCategoryId: volumeId, factorToBase: 0.00492892 },
+    { symbol: "items", label: "Items", unitCategoryId: countId, factorToBase: 1 },
+    { symbol: "slices", label: "Slices", unitCategoryId: countId, factorToBase: 1 },
+    { symbol: "cloves", label: "Cloves", unitCategoryId: countId, factorToBase: 1 },
+    { symbol: "pinch", label: "Pinch", unitCategoryId: countId, factorToBase: 1 },
+    { symbol: "head", label: "Head", unitCategoryId: countId, factorToBase: 1 },
+    { symbol: "bowl", label: "Bowl", unitCategoryId: countId, factorToBase: 1 },
+  ];
+
+  for (const u of units) {
+    await prisma.unit.upsert({
+      where: { symbol: u.symbol },
+      create: u,
+      update: { label: u.label, unitCategoryId: u.unitCategoryId, factorToBase: u.factorToBase },
+    });
+  }
+
+  const typeMap = await getGroceryTypeMap();
+  const typeCategories: Array<{ typeName: string; categoryIds: string[] }> = [
+    { typeName: "Vegetables", categoryIds: [weightId, countId] },
+    { typeName: "Fruits", categoryIds: [weightId, countId] },
+    { typeName: "Dairy & eggs", categoryIds: [volumeId, countId] },
+    { typeName: "Meat, poultry & fish", categoryIds: [weightId, countId] },
+    { typeName: "Grains, pasta & bread", categoryIds: [weightId, countId] },
+    { typeName: "Oils, vinegar & sauces", categoryIds: [volumeId] },
+    { typeName: "Spices & herbs", categoryIds: [countId] },
+    { typeName: "Pantry & canned", categoryIds: [weightId, volumeId, countId] },
+    { typeName: "Baking", categoryIds: [weightId, volumeId, countId] },
+    { typeName: "Condiments & other", categoryIds: [volumeId, countId] },
+    { typeName: "Beverages", categoryIds: [volumeId] },
+    { typeName: "Other", categoryIds: [weightId, volumeId, countId] },
+    { typeName: "Mine", categoryIds: [weightId, volumeId, countId] },
+  ];
+
+  for (const { typeName, categoryIds } of typeCategories) {
+    const typeId = typeMap[typeName];
+    if (!typeId) continue;
+    for (const catId of categoryIds) {
+      await prisma.groceryTypeUnitCategory.upsert({
+        where: {
+          groceryTypeId_unitCategoryId: { groceryTypeId: typeId, unitCategoryId: catId },
+        },
+        create: { groceryTypeId: typeId, unitCategoryId: catId },
+        update: {},
+      });
+    }
+  }
+  console.log("Seeded unit categories, units, and type–category links");
+}
+
 async function main() {
+  await seedUnits();
+
   const vegetables = [
     "Onion", "Carrot", "Celery", "Bell pepper", "Broccoli", "Spinach", "Zucchini",
     "Potato", "Sweet potato", "Mushrooms", "Green beans", "Peas", "Corn", "Cabbage",
@@ -210,7 +292,11 @@ async function main() {
     const ingredientData = await Promise.all(
       r.ingredients.map(async (i) => {
         const item = await findOrCreateGroceryItem(i.name, otherTypeId);
-        return { groceryItemId: item.id, quantity: i.quantity, unit: i.unit };
+        return {
+          groceryItemId: item.id,
+          quantity: i.quantity,
+          unit: i.unit && i.unit.trim() !== "" ? i.unit : "items",
+        };
       })
     );
     await prisma.recipe.create({

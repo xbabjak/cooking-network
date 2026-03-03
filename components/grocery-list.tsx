@@ -5,10 +5,10 @@ import {
   Button,
   Modal,
   NumberInput,
-  TextInput,
+  Select,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   addGrocery,
   updateGrocery,
@@ -16,6 +16,7 @@ import {
   decrementGrocery,
 } from "@/lib/actions/groceries";
 import { getGroceryItems, type GroceryItemOption } from "@/lib/grocery-items";
+import { getAllowedUnitsForItem, getAllUnits, type Unit } from "@/lib/units";
 import { groupGroceryItemsForAutocomplete } from "@/lib/grocery-autocomplete";
 
 type Grocery = {
@@ -45,12 +46,26 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
   const [quantity, setQuantity] = useState(0);
   const [lowThreshold, setLowThreshold] = useState(0);
   const [error, setError] = useState("");
+  const [allowedUnitsForForm, setAllowedUnitsForForm] = useState<Unit[]>([]);
+  const [defaultUnitOptions, setDefaultUnitOptions] = useState<Unit[]>([]);
 
   const fetchGroceryItems = useCallback(async (search: string) => {
     const items = await getGroceryItems(search || undefined);
     setGroceryItems(items);
     return items;
   }, []);
+
+  useEffect(() => {
+    getAllUnits().then(setDefaultUnitOptions);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedGroceryItemId) {
+      setAllowedUnitsForForm([]);
+      return;
+    }
+    getAllowedUnitsForItem(selectedGroceryItemId).then(setAllowedUnitsForForm);
+  }, [selectedGroceryItemId]);
 
   function resetForm() {
     setGroceryItemSearch("");
@@ -190,28 +205,60 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
                     (i) => i.name.toLowerCase() === value.toLowerCase()
                   );
                   setSelectedGroceryItemId(match?.id ?? null);
+                  if (match) {
+                    const units = await getAllowedUnitsForItem(match.id);
+                    setAllowedUnitsForForm(units);
+                    const allowedSymbols = new Set(units.map((u) => u.symbol));
+                    setUnit(
+                      allowedSymbols.has(match.defaultUnit)
+                        ? match.defaultUnit
+                        : units[0]?.symbol ?? "items"
+                    );
+                  }
                 } else {
                   setGroceryItems(initialGroceryItems);
                   setSelectedGroceryItemId(null);
                 }
               }}
-              onOptionSubmit={(value) => {
+              onOptionSubmit={async (value) => {
                 const item = groceryItems.find(
                   (i) => i.name.toLowerCase() === (value ?? "").toLowerCase()
                 );
                 if (item) {
                   setGroceryItemSearch(item.name);
                   setSelectedGroceryItemId(item.id);
+                  const units = await getAllowedUnitsForItem(item.id);
+                  setAllowedUnitsForForm(units);
+                  const allowedSymbols = new Set(units.map((u) => u.symbol));
+                  setUnit(
+                    allowedSymbols.has(item.defaultUnit)
+                      ? item.defaultUnit
+                      : units[0]?.symbol ?? "items"
+                  );
                 }
               }}
               filter={({ options }) => options}
               required
             />
-            <TextInput
+            <Select
               label="Unit"
-              value={unit}
-              onChange={(e) => setUnit(e.currentTarget.value)}
-              placeholder="e.g. items, L, kg"
+              data={
+                allowedUnitsForForm.length > 0
+                  ? allowedUnitsForForm.map((u) => ({
+                      value: u.symbol,
+                      label: u.label,
+                    }))
+                  : defaultUnitOptions.length > 0
+                    ? defaultUnitOptions.map((u) => ({
+                        value: u.symbol,
+                        label: u.label,
+                      }))
+                    : [{ value: "items", label: "Items" }]
+              }
+              value={unit || "items"}
+              onChange={(v) => setUnit(v ?? "items")}
+              allowDeselect={false}
+              searchable
             />
             <NumberInput
               label="Quantity"
@@ -267,11 +314,25 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
               <label className="block text-sm font-medium mb-1">Item</label>
               <p className="text-foreground py-2">{groceryItemSearch}</p>
             </div>
-            <TextInput
+            <Select
               label="Unit"
-              value={unit}
-              onChange={(e) => setUnit(e.currentTarget.value)}
-              placeholder="e.g. items, L, kg"
+              data={
+                allowedUnitsForForm.length > 0
+                  ? allowedUnitsForForm.map((u) => ({
+                      value: u.symbol,
+                      label: u.label,
+                    }))
+                  : defaultUnitOptions.length > 0
+                    ? defaultUnitOptions.map((u) => ({
+                        value: u.symbol,
+                        label: u.label,
+                      }))
+                    : [{ value: "items", label: "Items" }]
+              }
+              value={unit || "items"}
+              onChange={(v) => setUnit(v ?? "items")}
+              allowDeselect={false}
+              searchable
             />
             <NumberInput
               label="Quantity"

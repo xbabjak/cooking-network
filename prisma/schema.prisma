@@ -80,12 +80,44 @@ model Post {
   cookEvents UserCookEvent[]
 }
 
+model UnitCategory {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  baseUnitSymbol  String
+
+  units                Unit[]
+  groceryTypeCategories GroceryTypeUnitCategory[]
+}
+
+model Unit {
+  id             String   @id @default(cuid())
+  unitCategoryId String
+  symbol         String   @unique
+  label          String
+  factorToBase    Float    @default(1)
+
+  unitCategory UnitCategory @relation(fields: [unitCategoryId], references: [id], onDelete: Restrict)
+
+  @@index([unitCategoryId])
+}
+
+model GroceryTypeUnitCategory {
+  groceryTypeId   String
+  unitCategoryId  String
+
+  groceryType   GroceryType   @relation(fields: [groceryTypeId], references: [id], onDelete: Cascade)
+  unitCategory  UnitCategory @relation(fields: [unitCategoryId], references: [id], onDelete: Cascade)
+
+  @@id([groceryTypeId, unitCategoryId])
+}
+
 model GroceryType {
   id         String   @id @default(cuid())
   name       String   @unique
   sortOrder  Int      @default(0)
 
-  groceryItems GroceryItem[]
+  groceryItems           GroceryItem[]
+  unitCategories         GroceryTypeUnitCategory[]
 }
 
 model GroceryItem {

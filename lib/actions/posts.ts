@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { findOrCreateGroceryItem } from "@/lib/grocery-items";
+import { getAllowedUnitsForItem } from "@/lib/units";
 import { sanitizeHtml } from "@/lib/html-utils";
 import { z } from "zod";
 
@@ -73,10 +74,16 @@ export async function createPost(formData: FormData) {
         } else {
           throw new Error("Invalid ingredient");
         }
+        const allowedUnits = await getAllowedUnitsForItem(groceryItemId);
+        const allowedSymbols = new Set(allowedUnits.map((u) => u.symbol));
+        const rawUnit = (i.unit ?? "").trim() || "items";
+        const unit = allowedSymbols.has(rawUnit)
+          ? rawUnit
+          : allowedUnits[0]?.symbol ?? "items";
         return {
           groceryItemId,
           quantity: i.quantity,
-          unit: i.unit ?? "",
+          unit,
           optional: i.optional ?? false,
           oneOfGroupId: i.oneOfGroupId ?? null,
         };
@@ -158,10 +165,16 @@ export async function updatePost(formData: FormData) {
         } else {
           throw new Error("Invalid ingredient");
         }
+        const allowedUnits = await getAllowedUnitsForItem(groceryItemId);
+        const allowedSymbols = new Set(allowedUnits.map((u) => u.symbol));
+        const rawUnit = (i.unit ?? "").trim() || "items";
+        const unit = allowedSymbols.has(rawUnit)
+          ? rawUnit
+          : allowedUnits[0]?.symbol ?? "items";
         return {
           groceryItemId,
           quantity: i.quantity,
-          unit: i.unit ?? "",
+          unit,
           optional: i.optional ?? false,
           oneOfGroupId: i.oneOfGroupId ?? null,
         };

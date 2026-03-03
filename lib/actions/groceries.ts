@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { findOrCreateGroceryItem } from "@/lib/grocery-items";
+import { getAllowedUnitsForItem, convertQuantity } from "@/lib/units";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
@@ -65,10 +66,17 @@ export async function addGrocery(formData: FormData) {
     return { error: "Either grocery item or name is required" };
   }
 
+  const allowedUnits = await getAllowedUnitsForItem(groceryItemId);
+  const allowedSymbols = new Set(allowedUnits.map((u) => u.symbol));
+  const unit = parsed.data.unit ?? "items";
+  const normalizedUnit = allowedSymbols.has(unit)
+    ? unit
+    : allowedUnits[0]?.symbol ?? "items";
+
   const data = {
     userId: session.user.id,
     groceryItemId,
-    unit: parsed.data.unit ?? "items",
+    unit: normalizedUnit,
     quantity: parsed.data.quantity,
     lowThreshold: parsed.data.lowThreshold ?? 0,
     // updatedAt is optional and will default to now()
@@ -95,10 +103,23 @@ export async function updateGrocery(formData: FormData) {
   const parsed = updateGrocerySchema.safeParse(raw);
   if (!parsed.success) return { error: "Invalid data" };
 
+  const grocery = await prisma.grocery.findFirst({
+    where: { id, userId: session.user.id },
+    select: { groceryItemId: true },
+  });
+  if (!grocery) return { error: "Not found" };
+
+  const allowedUnits = await getAllowedUnitsForItem(grocery.groceryItemId);
+  const allowedSymbols = new Set(allowedUnits.map((u) => u.symbol));
+  const unit = parsed.data.unit ?? "items";
+  const normalizedUnit = allowedSymbols.has(unit)
+    ? unit
+    : allowedUnits[0]?.symbol ?? "items";
+
   await prisma.grocery.updateMany({
     where: { id, userId: session.user.id },
     data: {
-      unit: parsed.data.unit ?? "items",
+      unit: normalizedUnit,
       quantity: parsed.data.quantity,
       lowThreshold: parsed.data.lowThreshold ?? 0,
     },
@@ -229,13 +250,20 @@ export async function consumeRecipeIngredients(
       const grocery = await tx.grocery.findFirst({
         where: { userId, groceryItemId: ing.groceryItemId },
       });
-      if (grocery) {
-        const newQuantity = Math.max(0, grocery.quantity - ing.quantity);
-        await tx.grocery.update({
-          where: { id: grocery.id },
-          data: { quantity: newQuantity },
-        });
-      }
+      if (!grocery) continue;
+      const ingUnit = (ing.unit ?? "").trim() || "items";
+      const toDeduct =
+        (await convertQuantity(ing.quantity, ingUnit, grocery.unit)) ??
+        (ingUnit === grocery.unit ? ing.quantity : null);
+      if (toDeduct == null) continue;
+      const newQuantity = Math.max(
+        0,
+        Math.round((grocery.quantity - toDeduct) * 100) / 100
+      );
+      await tx.grocery.update({
+        where: { id: grocery.id },
+        data: { quantity: newQuantity },
+      });
     }
 
     await tx.userRecipeCookCount.upsert({

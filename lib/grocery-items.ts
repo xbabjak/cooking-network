@@ -101,6 +101,7 @@ export async function findOrCreateGroceryItem(
     data: {
       name: capitalized,
       groceryTypeId: mineType.id,
+      defaultUnit: "items",
       aliases:
         alias && normalize(alias) !== normalized
           ? { create: [{ alias: normalize(alias) }] }

@@ -23,6 +23,7 @@ import {
   clearPostDraft,
 } from "@/lib/draft-storage";
 import { getGroceryItems, type GroceryItemOption } from "@/lib/grocery-items";
+import { getAllowedUnitsForItem, getAllUnits, type Unit } from "@/lib/units";
 import { groupGroceryItemsForAutocomplete } from "@/lib/grocery-autocomplete";
 import { plainToHtml, sanitizeHtml, stripHtml } from "@/lib/html-utils";
 
@@ -113,6 +114,8 @@ export function PostForm({
     }));
   });
   const [groceryItemsMap, setGroceryItemsMap] = useState<Record<string, GroceryItemOption[]>>({});
+  const [allowedUnitsCache, setAllowedUnitsCache] = useState<Record<string, Unit[]>>({});
+  const [defaultUnitOptions, setDefaultUnitOptions] = useState<Unit[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -206,6 +209,34 @@ export function PostForm({
     editor,
   ]);
 
+  // Load default unit options (all units) when recipe form is shown
+  useEffect(() => {
+    if (type !== "recipe" || defaultUnitOptions.length > 0) return;
+    getAllUnits().then(setDefaultUnitOptions);
+  }, [type, defaultUnitOptions.length]);
+
+  // Preload allowed units for ingredients that have groceryItemId (e.g. when editing a recipe)
+  const ingredientItemIds = useMemo(
+    () => ingredients.map((i) => i.groceryItemId).filter(Boolean) as string[],
+    [ingredients]
+  );
+  // Only depend on type and ingredientItemIds; omit allowedUnitsCache to avoid
+  // re-running when the effect updates the cache (which would cause extra runs).
+  useEffect(() => {
+    if (type !== "recipe") return;
+    const ids = ingredientItemIds.filter((id) => !allowedUnitsCache[id]);
+    if (ids.length === 0) return;
+    Promise.all(ids.map((id) => getAllowedUnitsForItem(id))).then((results) => {
+      setAllowedUnitsCache((prev) => {
+        const next = { ...prev };
+        ids.forEach((id, idx) => {
+          if (results[idx]?.length) next[id] = results[idx];
+        });
+        return next;
+      });
+    });
+  }, [type, ingredientItemIds.join(",")]);
+
   const fetchGroceryItems = useCallback(async (rowId: string, search: string) => {
     const items = await getGroceryItems(search || undefined);
     setGroceryItemsMap((prev) => ({ ...prev, [rowId]: items }));
@@ -235,20 +266,40 @@ export function PostForm({
     );
   }
 
-  function setIngredientGroceryItem(
+  async function setIngredientGroceryItem(
     i: number,
     item: GroceryItemOption | null,
     /** When no match: use this as display name (e.g. what user typed) so we don’t keep a stale name. */
     typedValue?: string
   ) {
+    if (item == null) {
+      setIngredients((prev) =>
+        prev.map((ing, idx) =>
+          idx === i
+            ? {
+                ...ing,
+                groceryItemId: undefined,
+                groceryItemName: typedValue ?? ing.groceryItemName ?? "",
+              }
+            : ing
+        )
+      );
+      return;
+    }
+    const units = await getAllowedUnitsForItem(item.id);
+    setAllowedUnitsCache((prev) => ({ ...prev, [item.id]: units }));
+    const allowedSymbols = new Set(units.map((u) => u.symbol));
+    const unit = allowedSymbols.has(item.defaultUnit)
+      ? item.defaultUnit
+      : units[0]?.symbol ?? "items";
     setIngredients((prev) =>
       prev.map((ing, idx) =>
         idx === i
           ? {
               ...ing,
-              groceryItemId: item?.id,
-              groceryItemName:
-                item != null ? item.name : (typedValue ?? ing.groceryItemName ?? ""),
+              groceryItemId: item.id,
+              groceryItemName: item.name,
+              unit,
             }
           : ing
       )
@@ -519,16 +570,16 @@ export function PostForm({
                       const match = fetched.find(
                         (it) => it.name.toLowerCase() === value.toLowerCase()
                       );
-                      setIngredientGroceryItem(i, match ?? null, value);
+                      await setIngredientGroceryItem(i, match ?? null, value);
                     } else {
                       setIngredientGroceryItem(i, null, value);
                     }
                   }}
-                  onOptionSubmit={(value) => {
+                  onOptionSubmit={async (value) => {
                     const match = items.find(
                       (it) => it.name.toLowerCase() === (value ?? "").toLowerCase()
                     );
-                    if (match) setIngredientGroceryItem(i, match);
+                    if (match) await setIngredientGroceryItem(i, match);
                   }}
                   filter={({ options }) => options}
                   className="flex-1"
@@ -546,11 +597,26 @@ export function PostForm({
                   }
                   w={80}
                 />
-                <TextInput
+                <Select
                   placeholder="Unit"
-                  value={ing.unit}
-                  onChange={(e) => updateIngredient(i, "unit", e.currentTarget.value)}
-                  w={100}
+                  data={
+                    ing.groceryItemId && allowedUnitsCache[ing.groceryItemId]
+                      ? allowedUnitsCache[ing.groceryItemId].map((u) => ({
+                          value: u.symbol,
+                          label: u.label,
+                        }))
+                      : defaultUnitOptions.length > 0
+                        ? defaultUnitOptions.map((u) => ({
+                            value: u.symbol,
+                            label: u.label,
+                          }))
+                        : [{ value: "items", label: "Items" }]
+                  }
+                  value={ing.unit || "items"}
+                  onChange={(v) => updateIngredient(i, "unit", v ?? "items")}
+                  allowDeselect={false}
+                  w={120}
+                  searchable
                 />
                 <Select
                   placeholder="One of"
