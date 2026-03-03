@@ -87,6 +87,13 @@ export function Nav() {
               </Menu.Item>
               <Menu.Item
                 component={Link}
+                href="/analytics"
+                className="text-foreground hover:bg-hover hover:text-primary"
+              >
+                Analytics
+              </Menu.Item>
+              <Menu.Item
+                component={Link}
                 href="/profile/edit"
                 className="text-foreground hover:bg-hover hover:text-primary"
               >
@@ -177,6 +184,9 @@ export function Nav() {
               </Link>
               <Link href="/bookmarks" className={navLinkClass} onClick={closeDrawer}>
                 Bookmarks
+              </Link>
+              <Link href="/analytics" className={navLinkClass} onClick={closeDrawer}>
+                Analytics
               </Link>
               <Link href="/profile/edit" className={navLinkClass} onClick={closeDrawer}>
                 Edit profile

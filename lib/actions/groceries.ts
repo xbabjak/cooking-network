@@ -223,28 +223,40 @@ export async function consumeRecipeIngredients(
       : recipe.ingredients;
 
   const userId = session.user.id;
-  for (const ing of ingredientsToConsume) {
-    const grocery = await prisma.grocery.findFirst({
-      where: { userId, groceryItemId: ing.groceryItemId },
-    });
-    if (grocery) {
-      const newQuantity = Math.max(0, grocery.quantity - ing.quantity);
-      await prisma.grocery.update({
-        where: { id: grocery.id },
-        data: { quantity: newQuantity },
-      });
-    }
-  }
 
-  await prisma.userRecipeCookCount.upsert({
-    where: {
-      userId_recipeId: { userId, recipeId },
-    },
-    create: { userId, recipeId, count: 1 },
-    update: { count: { increment: 1 } },
+  await prisma.$transaction(async (tx) => {
+    for (const ing of ingredientsToConsume) {
+      const grocery = await tx.grocery.findFirst({
+        where: { userId, groceryItemId: ing.groceryItemId },
+      });
+      if (grocery) {
+        const newQuantity = Math.max(0, grocery.quantity - ing.quantity);
+        await tx.grocery.update({
+          where: { id: grocery.id },
+          data: { quantity: newQuantity },
+        });
+      }
+    }
+
+    await tx.userRecipeCookCount.upsert({
+      where: {
+        userId_recipeId: { userId, recipeId },
+      },
+      create: { userId, recipeId, count: 1 },
+      update: { count: { increment: 1 } },
+    });
+
+    await tx.userCookEvent.create({
+      data: {
+        userId,
+        recipeId,
+        postId: postId ?? null,
+      },
+    });
   });
 
   revalidatePath("/groceries");
+  revalidatePath("/analytics");
   if (postId) revalidatePath(`/post/${postId}`);
   return { success: true };
 }
