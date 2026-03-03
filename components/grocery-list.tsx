@@ -8,7 +8,7 @@ import {
   Select,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   addGrocery,
   updateGrocery,
@@ -48,6 +48,9 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
   const [error, setError] = useState("");
   const [allowedUnitsForForm, setAllowedUnitsForForm] = useState<Unit[]>([]);
   const [defaultUnitOptions, setDefaultUnitOptions] = useState<Unit[]>([]);
+  const [unitsLoading, setUnitsLoading] = useState(false);
+  const selectedGroceryItemIdRef = useRef<string | null>(null);
+  const selectedItemDefaultUnitRef = useRef<string | null>(null);
 
   const fetchGroceryItems = useCallback(async (search: string) => {
     const items = await getGroceryItems(search || undefined);
@@ -59,17 +62,41 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
     getAllUnits().then(setDefaultUnitOptions);
   }, []);
 
+  selectedGroceryItemIdRef.current = selectedGroceryItemId;
+
   useEffect(() => {
     if (!selectedGroceryItemId) {
       setAllowedUnitsForForm([]);
+      setUnit("items");
+      setUnitsLoading(false);
       return;
     }
-    getAllowedUnitsForItem(selectedGroceryItemId).then(setAllowedUnitsForForm);
+    setUnitsLoading(true);
+    const id = selectedGroceryItemId;
+    getAllowedUnitsForItem(id)
+      .then((units) => {
+        if (id !== selectedGroceryItemIdRef.current) return;
+        setAllowedUnitsForForm(units);
+        const allowedSymbols = new Set(units.map((u) => u.symbol));
+        const defaultUnit = selectedItemDefaultUnitRef.current;
+        setUnit(
+          defaultUnit && allowedSymbols.has(defaultUnit)
+            ? defaultUnit
+            : units[0]?.symbol ?? "items"
+        );
+      })
+      .finally(() => {
+        if (id === selectedGroceryItemIdRef.current) {
+          setUnitsLoading(false);
+        }
+      });
   }, [selectedGroceryItemId]);
 
   function resetForm() {
     setGroceryItemSearch("");
     setSelectedGroceryItemId(null);
+    selectedGroceryItemIdRef.current = null;
+    selectedItemDefaultUnitRef.current = null;
     setUnit("items");
     setQuantity(0);
     setLowThreshold(0);
@@ -82,6 +109,7 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
     setEditingId(g.id);
     setGroceryItemSearch(g.groceryItem.name);
     setSelectedGroceryItemId(g.groceryItemId);
+    selectedItemDefaultUnitRef.current = g.unit;
     setUnit(g.unit);
     setQuantity(g.quantity);
     setLowThreshold(g.lowThreshold);
@@ -206,35 +234,27 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
                   );
                   setSelectedGroceryItemId(match?.id ?? null);
                   if (match) {
-                    const units = await getAllowedUnitsForItem(match.id);
-                    setAllowedUnitsForForm(units);
-                    const allowedSymbols = new Set(units.map((u) => u.symbol));
-                    setUnit(
-                      allowedSymbols.has(match.defaultUnit)
-                        ? match.defaultUnit
-                        : units[0]?.symbol ?? "items"
-                    );
+                    selectedItemDefaultUnitRef.current =
+                      match.defaultUnit ?? "items";
+                  } else {
+                    selectedItemDefaultUnitRef.current = null;
+                    setGroceryItems(initialGroceryItems);
                   }
                 } else {
                   setGroceryItems(initialGroceryItems);
                   setSelectedGroceryItemId(null);
+                  selectedItemDefaultUnitRef.current = null;
                 }
               }}
-              onOptionSubmit={async (value) => {
+              onOptionSubmit={(value) => {
                 const item = groceryItems.find(
                   (i) => i.name.toLowerCase() === (value ?? "").toLowerCase()
                 );
                 if (item) {
                   setGroceryItemSearch(item.name);
+                  selectedItemDefaultUnitRef.current =
+                    item.defaultUnit ?? "items";
                   setSelectedGroceryItemId(item.id);
-                  const units = await getAllowedUnitsForItem(item.id);
-                  setAllowedUnitsForForm(units);
-                  const allowedSymbols = new Set(units.map((u) => u.symbol));
-                  setUnit(
-                    allowedSymbols.has(item.defaultUnit)
-                      ? item.defaultUnit
-                      : units[0]?.symbol ?? "items"
-                  );
                 }
               }}
               filter={({ options }) => options}
@@ -259,6 +279,7 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
               onChange={(v) => setUnit(v ?? "items")}
               allowDeselect={false}
               searchable
+              disabled={!!(selectedGroceryItemId && unitsLoading)}
             />
             <NumberInput
               label="Quantity"
@@ -281,6 +302,7 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
             <Button
               type="submit"
               className="bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2 rounded-md"
+              disabled={!!(selectedGroceryItemId && unitsLoading)}
             >
               Add
             </Button>
@@ -333,6 +355,7 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
               onChange={(v) => setUnit(v ?? "items")}
               allowDeselect={false}
               searchable
+              disabled={unitsLoading}
             />
             <NumberInput
               label="Quantity"
@@ -355,6 +378,7 @@ export function GroceryList({ groceries: initial, initialGroceryItems }: Props) 
             <Button
               type="submit"
               className="bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2"
+              disabled={unitsLoading}
             >
               Save
             </Button>

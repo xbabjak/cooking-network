@@ -2,9 +2,7 @@
 
 import {
   TextInput,
-  NumberInput,
   Select,
-  Autocomplete,
   Popover,
   Button,
   Checkbox,
@@ -23,42 +21,13 @@ import {
   clearPostDraft,
 } from "@/lib/draft-storage";
 import { getGroceryItems, type GroceryItemOption } from "@/lib/grocery-items";
-import { getAllowedUnitsForItem, getAllUnits, type Unit } from "@/lib/units";
-import { groupGroceryItemsForAutocomplete } from "@/lib/grocery-autocomplete";
-import { plainToHtml, sanitizeHtml, stripHtml } from "@/lib/html-utils";
-
-type Ingredient = {
-  rowId: string;
-  groceryItemId?: string;
-  groceryItemName?: string;
-  quantity: number;
-  unit: string;
-  optional?: boolean;
-  oneOfGroupId?: string | null;
-};
-
-type Props = {
-  postId?: string;
-  initialTitle?: string;
-  initialContent?: string;
-  initialImageUrls?: string[];
-  initialType?: "story" | "recipe";
-  initialPostPrivate?: boolean;
-  initialRecipe?: {
-    name: string;
-    description: string;
-    imageUrl?: string;
-    isPrivate?: boolean;
-    ingredients: Omit<Ingredient, "rowId">[];
-  };
-  initialGroceryItems: GroceryItemOption[];
-};
-
-function getInitialHtml(content: string, imageUrls: string[]): string {
-  if (imageUrls.length > 0) return sanitizeHtml(plainToHtml(content, imageUrls));
-  if (/<[a-z][\s\S]*>/i.test(content)) return sanitizeHtml(content);
-  return sanitizeHtml(plainToHtml(content, []));
-}
+import { getAllowedUnitsForItem } from "@/lib/units";
+import { stripHtml } from "@/lib/html-utils";
+import type { Ingredient } from "./types";
+import type { PostFormProps } from "./types";
+import { getInitialHtml } from "./utils";
+import { useRecipeUnits } from "./use-recipe-units";
+import { RecipeFields } from "./recipe-fields";
 
 export function PostForm({
   postId,
@@ -69,7 +38,7 @@ export function PostForm({
   initialPostPrivate,
   initialRecipe,
   initialGroceryItems,
-}: Props) {
+}: PostFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [imageUrlPopoverOpen, setImageUrlPopoverOpen] = useState(false);
@@ -102,10 +71,9 @@ export function PostForm({
     initialPostPrivate ?? initialRecipe?.isPrivate ?? false
   );
   const [ingredients, setIngredients] = useState<Ingredient[]>(() => {
-    const list =
-      initialRecipe?.ingredients?.length
-        ? initialRecipe.ingredients
-        : [{ groceryItemName: "", quantity: 1, unit: "" }];
+    const list = initialRecipe?.ingredients?.length
+      ? initialRecipe.ingredients
+      : [{ groceryItemName: "", quantity: 1, unit: "" }];
     return list.map((ing) => ({
       ...ing,
       optional: ing.optional ?? false,
@@ -113,11 +81,14 @@ export function PostForm({
       rowId: crypto.randomUUID(),
     }));
   });
-  const [groceryItemsMap, setGroceryItemsMap] = useState<Record<string, GroceryItemOption[]>>({});
-  const [allowedUnitsCache, setAllowedUnitsCache] = useState<Record<string, Unit[]>>({});
-  const [defaultUnitOptions, setDefaultUnitOptions] = useState<Unit[]>([]);
+  const [groceryItemsMap, setGroceryItemsMap] = useState<
+    Record<string, GroceryItemOption[]>
+  >({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const { defaultUnitOptions, allowedUnitsCache, setAllowedUnitsCache } =
+    useRecipeUnits(type, ingredients);
 
   const editorContentRef = useRef(initialHtml);
   const restoredContentRef = useRef<string | null>(null);
@@ -143,13 +114,22 @@ export function PostForm({
               oneOfGroupId: ing.oneOfGroupId ?? undefined,
               rowId: crypto.randomUUID(),
             }))
-          : [{ rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "", optional: false, oneOfGroupId: undefined }]
+          : [
+              {
+                rowId: crypto.randomUUID(),
+                groceryItemName: "",
+                quantity: 1,
+                unit: "",
+                optional: false,
+                oneOfGroupId: undefined,
+              },
+            ]
       );
     }
     restoredContentRef.current = draft.content;
   }, [postId]);
 
-  // Apply restored content when editor is ready (include postId so content is applied when switching posts)
+  // Apply restored content when editor is ready
   useEffect(() => {
     if (!editor || restoredContentRef.current === null) return;
     editor.commands.setContent(restoredContentRef.current);
@@ -173,8 +153,7 @@ export function PostForm({
   useEffect(() => {
     const ms = 1000;
     const id = setTimeout(() => {
-      const content =
-        editor?.getHTML() ?? editorContentRef.current ?? "";
+      const content = editor?.getHTML() ?? editorContentRef.current ?? "";
       setPostDraft(draftKey, {
         title,
         content,
@@ -209,39 +188,14 @@ export function PostForm({
     editor,
   ]);
 
-  // Load default unit options (all units) when recipe form is shown
-  useEffect(() => {
-    if (type !== "recipe" || defaultUnitOptions.length > 0) return;
-    getAllUnits().then(setDefaultUnitOptions);
-  }, [type, defaultUnitOptions.length]);
-
-  // Preload allowed units for ingredients that have groceryItemId (e.g. when editing a recipe)
-  const ingredientItemIds = useMemo(
-    () => ingredients.map((i) => i.groceryItemId).filter(Boolean) as string[],
-    [ingredients]
+  const fetchGroceryItems = useCallback(
+    async (rowId: string, search: string) => {
+      const items = await getGroceryItems(search || undefined);
+      setGroceryItemsMap((prev) => ({ ...prev, [rowId]: items }));
+      return items;
+    },
+    []
   );
-  // Only depend on type and ingredientItemIds; omit allowedUnitsCache to avoid
-  // re-running when the effect updates the cache (which would cause extra runs).
-  useEffect(() => {
-    if (type !== "recipe") return;
-    const ids = ingredientItemIds.filter((id) => !allowedUnitsCache[id]);
-    if (ids.length === 0) return;
-    Promise.all(ids.map((id) => getAllowedUnitsForItem(id))).then((results) => {
-      setAllowedUnitsCache((prev) => {
-        const next = { ...prev };
-        ids.forEach((id, idx) => {
-          if (results[idx]?.length) next[id] = results[idx];
-        });
-        return next;
-      });
-    });
-  }, [type, ingredientItemIds.join(",")]);
-
-  const fetchGroceryItems = useCallback(async (rowId: string, search: string) => {
-    const items = await getGroceryItems(search || undefined);
-    setGroceryItemsMap((prev) => ({ ...prev, [rowId]: items }));
-    return items;
-  }, []);
 
   function insertImage(url: string) {
     if (url && url.startsWith("http") && editor) {
@@ -254,11 +208,22 @@ export function PostForm({
   function addIngredient() {
     setIngredients((prev) => [
       ...prev,
-      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "", optional: false, oneOfGroupId: undefined },
+      {
+        rowId: crypto.randomUUID(),
+        groceryItemName: "",
+        quantity: 1,
+        unit: "",
+        optional: false,
+        oneOfGroupId: undefined,
+      },
     ]);
   }
 
-  function updateIngredient(i: number, field: keyof Omit<Ingredient, "rowId">, value: string | number | boolean | undefined | null) {
+  function updateIngredient(
+    i: number,
+    field: keyof Omit<Ingredient, "rowId">,
+    value: string | number | boolean | undefined | null
+  ) {
     setIngredients((prev) =>
       prev.map((ing, idx) =>
         idx === i ? { ...ing, [field]: value } : ing
@@ -269,7 +234,6 @@ export function PostForm({
   async function setIngredientGroceryItem(
     i: number,
     item: GroceryItemOption | null,
-    /** When no match: use this as display name (e.g. what user typed) so we don’t keep a stale name. */
     typedValue?: string
   ) {
     if (item == null) {
@@ -332,16 +296,20 @@ export function PostForm({
       formData.set(
         "recipeIngredients",
         JSON.stringify(
-          ingredients.filter(
-            (i) => i.groceryItemId || (i.groceryItemName && i.groceryItemName.trim())
-          ).map((i) => ({
-            groceryItemId: i.groceryItemId,
-            name: i.groceryItemName?.trim() || undefined,
-            quantity: i.quantity,
-            unit: i.unit,
-            optional: i.optional ?? false,
-            oneOfGroupId: i.oneOfGroupId ?? undefined,
-          }))
+          ingredients
+            .filter(
+              (i) =>
+                i.groceryItemId ||
+                (i.groceryItemName && i.groceryItemName.trim())
+            )
+            .map((i) => ({
+              groceryItemId: i.groceryItemId,
+              name: i.groceryItemName?.trim() || undefined,
+              quantity: i.quantity,
+              unit: i.unit,
+              optional: i.optional ?? false,
+              oneOfGroupId: i.oneOfGroupId ?? undefined,
+            }))
         )
       );
     }
@@ -372,7 +340,10 @@ export function PostForm({
 
   function handleDiscardDraft() {
     if (postId) return;
-    if (!confirm("Remove unfinished changes? Your draft will be cleared.")) return;
+    if (
+      !confirm("Remove unfinished changes? Your draft will be cleared.")
+    )
+      return;
     clearPostDraft(getPostDraftKey());
     restoredContentRef.current = null;
     setTitle("");
@@ -382,31 +353,22 @@ export function PostForm({
     setRecipeImageUrl("");
     setPostPrivate(false);
     setIngredients([
-      { rowId: crypto.randomUUID(), groceryItemName: "", quantity: 1, unit: "", optional: false, oneOfGroupId: undefined },
+      {
+        rowId: crypto.randomUUID(),
+        groceryItemName: "",
+        quantity: 1,
+        unit: "",
+        optional: false,
+        oneOfGroupId: undefined,
+      },
     ]);
     setError("");
     editor?.commands.setContent("<p></p>");
   }
 
-  const oneOfGroupOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const out: { value: string; label: string }[] = [];
-    for (const ing of ingredients) {
-      if (!ing.oneOfGroupId) continue;
-      const name = (ing.groceryItemName?.trim() || "").slice(0, 30) || "?";
-      if (!seen.has(ing.oneOfGroupId)) {
-        seen.add(ing.oneOfGroupId);
-        out.push({ value: ing.oneOfGroupId, label: `One of: ${name}` });
-      }
-    }
-    return [{ value: "", label: "—" }, { value: "__new__", label: "New 'one of' group" }, ...out];
-  }, [ingredients]);
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && (
-        <p className="text-sm text-error">{error}</p>
-      )}
+      {error && <p className="text-sm text-error">{error}</p>}
       <TextInput
         label="Title"
         value={title}
@@ -446,11 +408,30 @@ export function PostForm({
               >
                 <Popover.Target>
                   <RichTextEditor.Control
-                    onClick={() => setImageUrlPopoverOpen((o) => !o)}
+                    onClick={() =>
+                      setImageUrlPopoverOpen((o) => !o)
+                    }
                     title="Insert image"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect
+                        x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="2"
+                        ry="2"
+                      />
                       <circle cx="8.5" cy="8.5" r="1.5" />
                       <polyline points="21 15 16 10 5 21" />
                     </svg>
@@ -462,11 +443,20 @@ export function PostForm({
                       type="url"
                       placeholder="https://..."
                       value={imageUrlInput}
-                      onChange={(e) => setImageUrlInput(e.currentTarget.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), insertImage(imageUrlInput))}
+                      onChange={(e) =>
+                        setImageUrlInput(e.currentTarget.value)
+                      }
+                      onKeyDown={(e) =>
+                        e.key === "Enter" &&
+                        (e.preventDefault(),
+                        insertImage(imageUrlInput))
+                      }
                       className="flex-1"
                     />
-                    <Button size="sm" onClick={() => insertImage(imageUrlInput)}>
+                    <Button
+                      size="sm"
+                      onClick={() => insertImage(imageUrlInput)}
+                    >
                       Insert
                     </Button>
                   </div>
@@ -484,7 +474,9 @@ export function PostForm({
       <Select
         label="Type"
         value={type}
-        onChange={(v) => setType((v as "story" | "recipe") ?? "story")}
+        onChange={(v) =>
+          setType((v as "story" | "recipe") ?? "story")
+        }
         data={[
           { value: "story", label: "Story" },
           { value: "recipe", label: "Recipe" },
@@ -497,158 +489,24 @@ export function PostForm({
         onChange={(e) => setPostPrivate(e.currentTarget.checked)}
       />
       {type === "recipe" && (
-        <div className="space-y-3 p-4 border border-border rounded-lg bg-surface-alt">
-          <h3 className="font-medium">Recipe details</h3>
-          <TextInput
-            label="Recipe name"
-            value={recipeName}
-            onChange={(e) => setRecipeName(e.currentTarget.value)}
-          />
-          <TextInput
-            label="Description"
-            value={recipeDescription}
-            onChange={(e) => setRecipeDescription(e.currentTarget.value)}
-          />
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Preview picture URL
-            </label>
-            <TextInput
-              type="url"
-              value={recipeImageUrl}
-              onChange={(e) => setRecipeImageUrl(e.currentTarget.value)}
-              placeholder="https://..."
-              className="flex-1"
-            />
-            {recipeImageUrl.startsWith("http") && (
-              <div className="mt-2">
-                <img
-                  src={recipeImageUrl}
-                  alt=""
-                  className="h-20 w-20 object-cover rounded"
-                />
-              </div>
-            )}
-          </div>
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="text-sm">Ingredients</label>
-              <button
-                type="button"
-                onClick={addIngredient}
-                className="shrink-0 px-3 py-1.5 text-sm border border-border text-primary hover:bg-hover rounded-md"
-              >
-                + Add
-              </button>
-            </div>
-            {ingredients.map((ing, i) => {
-              const items = groceryItemsMap[ing.rowId] ?? initialGroceryItems;
-              const autocompleteData = groupGroceryItemsForAutocomplete(items);
-              return (
-              <div key={ing.rowId} className="flex gap-2 mt-2 items-center flex-wrap">
-                <Autocomplete
-                  placeholder="Search or type to add new"
-                  data={autocompleteData}
-                  styles={{
-                    groupLabel: {
-                      fontWeight: 600,
-                      fontSize: "var(--mantine-font-size-xs)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      color: "var(--mantine-color-dimmed)",
-                      paddingBlock: "var(--mantine-spacing-xs)",
-                      paddingInline: "var(--mantine-spacing-sm)",
-                      borderBottom: "1px solid var(--mantine-color-default-border)",
-                      backgroundColor: "var(--mantine-color-default-hover)",
-                    },
-                  }}
-                  value={ing.groceryItemName ?? ""}
-                  onChange={async (value) => {
-                    updateIngredient(i, "groceryItemName", value);
-                    if (value.length >= 1) {
-                      const fetched = await fetchGroceryItems(ing.rowId, value);
-                      const match = fetched.find(
-                        (it) => it.name.toLowerCase() === value.toLowerCase()
-                      );
-                      await setIngredientGroceryItem(i, match ?? null, value);
-                    } else {
-                      setIngredientGroceryItem(i, null, value);
-                    }
-                  }}
-                  onOptionSubmit={async (value) => {
-                    const match = items.find(
-                      (it) => it.name.toLowerCase() === (value ?? "").toLowerCase()
-                    );
-                    if (match) await setIngredientGroceryItem(i, match);
-                  }}
-                  filter={({ options }) => options}
-                  className="flex-1"
-                />
-                <NumberInput
-                  min={0}
-                  step={0.5}
-                  value={ing.quantity}
-                  onChange={(value) =>
-                    updateIngredient(
-                      i,
-                      "quantity",
-                      typeof value === "string" ? parseFloat(value) || 0 : value ?? 0
-                    )
-                  }
-                  w={80}
-                />
-                <Select
-                  placeholder="Unit"
-                  data={
-                    ing.groceryItemId && allowedUnitsCache[ing.groceryItemId]
-                      ? allowedUnitsCache[ing.groceryItemId].map((u) => ({
-                          value: u.symbol,
-                          label: u.label,
-                        }))
-                      : defaultUnitOptions.length > 0
-                        ? defaultUnitOptions.map((u) => ({
-                            value: u.symbol,
-                            label: u.label,
-                          }))
-                        : [{ value: "items", label: "Items" }]
-                  }
-                  value={ing.unit || "items"}
-                  onChange={(v) => updateIngredient(i, "unit", v ?? "items")}
-                  allowDeselect={false}
-                  w={120}
-                  searchable
-                />
-                <Select
-                  placeholder="One of"
-                  data={oneOfGroupOptions}
-                  value={ing.oneOfGroupId ?? ""}
-                  onChange={(v) => {
-                    if (v === "__new__") updateIngredient(i, "oneOfGroupId", crypto.randomUUID());
-                    else if (v === "" || v === null) updateIngredient(i, "oneOfGroupId", undefined);
-                    else updateIngredient(i, "oneOfGroupId", v);
-                  }}
-                  allowDeselect={false}
-                  w={140}
-                  size="sm"
-                />
-                <Checkbox
-                  size="sm"
-                  label="Optional"
-                  checked={ing.optional ?? false}
-                  onChange={(e) => updateIngredient(i, "optional", e.currentTarget.checked)}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeIngredient(i)}
-                  className="shrink-0 px-3 py-1.5 text-sm border border-border text-error hover:bg-hover rounded-md"
-                >
-                  Remove
-                </button>
-              </div>
-            );
-            })}
-          </div>
-        </div>
+        <RecipeFields
+          recipeName={recipeName}
+          setRecipeName={setRecipeName}
+          recipeDescription={recipeDescription}
+          setRecipeDescription={setRecipeDescription}
+          recipeImageUrl={recipeImageUrl}
+          setRecipeImageUrl={setRecipeImageUrl}
+          ingredients={ingredients}
+          groceryItemsMap={groceryItemsMap}
+          initialGroceryItems={initialGroceryItems}
+          allowedUnitsCache={allowedUnitsCache}
+          defaultUnitOptions={defaultUnitOptions}
+          addIngredient={addIngredient}
+          updateIngredient={updateIngredient}
+          setIngredientGroceryItem={setIngredientGroceryItem}
+          removeIngredient={removeIngredient}
+          fetchGroceryItems={fetchGroceryItems}
+        />
       )}
       <div className="flex gap-3 flex-wrap">
         <button
