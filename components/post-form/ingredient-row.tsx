@@ -81,6 +81,7 @@ export function IngredientRow({
         data={autocompleteData}
         styles={autocompleteStyles}
         value={ingredient.groceryItemName ?? ""}
+        maxLength={200}
         onChange={async (value) => {
           onUpdate(index, "groceryItemName", value);
           if (value.length >= 1) {

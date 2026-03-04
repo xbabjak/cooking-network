@@ -11,6 +11,7 @@ import { RichTextEditor, Link } from "@mantine/tiptap";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
+import CharacterCount from "@tiptap/extension-character-count";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createPost, updatePost, deletePost } from "@/lib/actions/posts";
@@ -50,6 +51,8 @@ export function PostForm({
     [initialContent, initialImageUrls]
   );
 
+  const RTE_CHAR_LIMIT = 5000;
+
   const editor = useEditor({
     immediatelyRender: false,
     shouldRerenderOnTransaction: true,
@@ -57,6 +60,7 @@ export function PostForm({
       StarterKit.configure({ link: false }),
       Link,
       Image,
+      CharacterCount.configure({ limit: RTE_CHAR_LIMIT }),
     ],
     content: initialHtml,
   });
@@ -89,6 +93,7 @@ export function PostForm({
   >({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [charCount, setCharCount] = useState(0);
 
   const { defaultUnitOptions, allowedUnitsCache, setAllowedUnitsCache } =
     useRecipeUnits(type, ingredients);
@@ -140,12 +145,18 @@ export function PostForm({
     restoredContentRef.current = null;
   }, [editor, postId]);
 
-  // Keep editor HTML in ref for debounced save
+  // Keep editor HTML in ref for debounced save; sync character count
   useEffect(() => {
     if (!editor) return;
+    const updateCount = () => {
+      const storage = editor.storage as { characterCount?: { characters?: () => number } };
+      setCharCount(storage.characterCount?.characters?.() ?? 0);
+    };
     const handler = () => {
       editorContentRef.current = editor.getHTML();
+      updateCount();
     };
+    updateCount();
     editor.on("update", handler);
     return () => {
       editor.off("update", handler);
@@ -286,6 +297,11 @@ export function PostForm({
     const htmlContent = editor?.getHTML() ?? "";
     if (!stripHtml(htmlContent).trim()) {
       setError("Content is required");
+      return;
+    }
+    const count = (editor?.storage as { characterCount?: { characters?: () => number } })?.characterCount?.characters?.() ?? 0;
+    if (count > RTE_CHAR_LIMIT) {
+      setError(`Content cannot exceed ${RTE_CHAR_LIMIT} characters.`);
       return;
     }
     setSubmitting(true);
@@ -460,6 +476,7 @@ export function PostForm({
                         insertImage(imageUrlInput))
                       }
                       className="flex-1"
+                      maxLength={200}
                     />
                     <Button
                       size="sm"
@@ -478,6 +495,12 @@ export function PostForm({
           </RichTextEditor.Toolbar>
           <RichTextEditor.Content />
         </RichTextEditor>
+        <p
+          className={`text-xs mt-1 ${charCount > RTE_CHAR_LIMIT ? "text-error" : "text-muted"}`}
+          aria-live="polite"
+        >
+          {charCount.toLocaleString()} / {RTE_CHAR_LIMIT.toLocaleString()} characters
+        </p>
       </div>
       <Select
         label="Type"

@@ -81,11 +81,13 @@ export function RecipeFields({
         label="Recipe name"
         value={recipeName}
         onChange={(e) => setRecipeName(e.currentTarget.value)}
+        maxLength={200}
       />
       <TextInput
         label="Description"
         value={recipeDescription}
         onChange={(e) => setRecipeDescription(e.currentTarget.value)}
+        maxLength={1000}
       />
       <NumberInput
         label="Servings"
@@ -105,6 +107,7 @@ export function RecipeFields({
           onChange={(e) => setRecipeImageUrl(e.currentTarget.value)}
           placeholder="https://..."
           className="flex-1"
+          maxLength={200}
         />
         {recipeImageUrl.startsWith("http") && (
           <div className="mt-2">

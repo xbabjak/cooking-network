@@ -6,12 +6,12 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { findOrCreateGroceryItem } from "@/lib/grocery-items";
 import { getAllowedUnitsForItem } from "@/lib/units";
-import { sanitizeHtml } from "@/lib/html-utils";
+import { sanitizeHtml, stripHtml } from "@/lib/html-utils";
 import { z } from "zod";
 
 const recipeIngredientSchema = z.object({
   groceryItemId: z.string().min(1).optional(),
-  name: z.string().min(1).max(100).optional(),
+  name: z.string().min(1).max(200).optional(),
   quantity: z.number().min(0),
   unit: z.string().optional(),
   optional: z.boolean().optional(),
@@ -20,21 +20,34 @@ const recipeIngredientSchema = z.object({
   message: "Either groceryItemId or name is required",
 });
 
-const createSchema = z.object({
+const CONTENT_CHAR_LIMIT = 5000;
+
+const contentLengthRefine = (data: { content?: string }) =>
+  !data.content || stripHtml(data.content).length <= CONTENT_CHAR_LIMIT;
+
+const baseSchema = z.object({
   title: z.string().min(1).max(200),
   content: z.string().min(1),
   imageUrls: z.array(z.string().url()).max(5).optional(),
   type: z.enum(["story", "recipe"]).optional(),
-  recipeName: z.string().optional(),
-  recipeDescription: z.string().optional(),
+  recipeName: z.string().max(200).optional(),
+  recipeDescription: z.string().max(1000).optional(),
   recipeImageUrl: z.union([z.string().url(), z.literal("")]).optional(),
   recipeServings: z.number().positive().optional(),
   postPrivate: z.boolean().optional(),
   recipeIngredients: z.array(recipeIngredientSchema).optional(),
 });
 
-const updateSchema = createSchema.partial().extend({
+const createSchema = baseSchema.refine(contentLengthRefine, {
+  message: `Content cannot exceed ${CONTENT_CHAR_LIMIT} characters.`,
+  path: ["content"],
+});
+
+const updateSchema = baseSchema.partial().extend({
   id: z.string().cuid(),
+}).refine(contentLengthRefine, {
+  message: `Content cannot exceed ${CONTENT_CHAR_LIMIT} characters.`,
+  path: ["content"],
 });
 
 export async function createPost(formData: FormData) {
@@ -64,7 +77,10 @@ export async function createPost(formData: FormData) {
       : undefined,
   };
   const parsed = createSchema.safeParse(raw);
-  if (!parsed.success) return { error: "Invalid data" };
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message;
+    return { error: typeof message === "string" ? message : "Invalid data" };
+  }
 
   const { title, content, imageUrls, type, recipeName, recipeDescription, recipeImageUrl, recipeServings, postPrivate, recipeIngredients } =
     parsed.data;
@@ -163,7 +179,10 @@ export async function updatePost(formData: FormData) {
       : undefined,
   };
   const parsed = updateSchema.safeParse(raw);
-  if (!parsed.success) return { error: "Invalid data" };
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message;
+    return { error: typeof message === "string" ? message : "Invalid data" };
+  }
 
   const { title, content, imageUrls, type, recipeName, recipeDescription, recipeImageUrl, recipeServings, postPrivate, recipeIngredients } =
     parsed.data;

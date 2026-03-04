@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NumberInput } from "@mantine/core";
 import { DoneCookingButton } from "@/components/done-cooking";
 import { BookmarkButton } from "@/components/bookmark-button";
@@ -46,6 +46,11 @@ export function RecipeWithServings({
 }: RecipeWithServingsProps) {
   const baseServings = recipe.servings != null && recipe.servings > 0 ? recipe.servings : 1;
   const [servings, setServings] = useState(baseServings);
+
+  // Reset servings to the new recipe's default when recipe changes (e.g. client navigation)
+  useEffect(() => {
+    setServings(baseServings);
+  }, [recipe.id, baseServings]);
 
   const scale = servings / baseServings;
 
