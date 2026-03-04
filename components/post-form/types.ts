@@ -21,6 +21,7 @@ export type PostFormProps = {
     name: string;
     description: string;
     imageUrl?: string;
+    servings?: number;
     isPrivate?: boolean;
     ingredients: Omit<Ingredient, "rowId">[];
   };

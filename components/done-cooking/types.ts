@@ -12,6 +12,7 @@ export type DoneCookingButtonProps = {
   postId?: string;
   skipConfirmFromSettings?: boolean;
   recipeIngredients?: RecipeIngredientForDone[];
+  servings?: number;
 };
 
 export type RowOverride = { deduct: number; include: boolean };

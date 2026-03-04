@@ -25,6 +25,7 @@ export function useDoneCooking({
   postId,
   skipConfirmFromSettings = false,
   recipeIngredients = [],
+  servings,
 }: DoneCookingButtonProps) {
   const router = useRouter();
   const oneOfGroups = useMemo(
@@ -58,7 +59,7 @@ export function useDoneCooking({
               oneOfChoices
             )
           : undefined;
-      const result = await getDoneCookingPreview(recipeId, chosenIds);
+      const result = await getDoneCookingPreview(recipeId, chosenIds, servings);
       if (result.error) {
         setPreviewError(result.error);
         return;
@@ -80,7 +81,7 @@ export function useDoneCooking({
     } finally {
       setPreviewLoading(false);
     }
-  }, [recipeId, recipeIngredients, oneOfGroups, oneOfChoices]);
+  }, [recipeId, recipeIngredients, oneOfGroups, oneOfChoices, servings]);
 
   const consume = useCallback(
     async (
@@ -94,7 +95,8 @@ export function useDoneCooking({
           recipeId,
           postId,
           chosenIngredientIds,
-          deductionOverrides
+          deductionOverrides,
+          servings
         );
         if (result?.error) {
           setError(result.error);
@@ -115,7 +117,7 @@ export function useDoneCooking({
         setLoading(false);
       }
     },
-    [recipeId, postId, router]
+    [recipeId, postId, servings, router]
   );
 
   const openConfirm = useCallback(async () => {

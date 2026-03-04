@@ -1,6 +1,6 @@
 "use client";
 
-import { TextInput } from "@mantine/core";
+import { TextInput, NumberInput } from "@mantine/core";
 import { useMemo } from "react";
 import type { GroceryItemOption } from "@/lib/grocery-items";
 import type { Unit } from "@/lib/units";
@@ -14,6 +14,8 @@ type RecipeFieldsProps = {
   setRecipeDescription: (v: string) => void;
   recipeImageUrl: string;
   setRecipeImageUrl: (v: string) => void;
+  recipeServings: number;
+  setRecipeServings: (v: number) => void;
   ingredients: Ingredient[];
   groceryItemsMap: Record<string, GroceryItemOption[]>;
   initialGroceryItems: GroceryItemOption[];
@@ -41,6 +43,8 @@ export function RecipeFields({
   setRecipeDescription,
   recipeImageUrl,
   setRecipeImageUrl,
+  recipeServings,
+  setRecipeServings,
   ingredients,
   groceryItemsMap,
   initialGroceryItems,
@@ -82,6 +86,14 @@ export function RecipeFields({
         label="Description"
         value={recipeDescription}
         onChange={(e) => setRecipeDescription(e.currentTarget.value)}
+      />
+      <NumberInput
+        label="Servings"
+        description="Number of servings this recipe is for"
+        value={recipeServings}
+        onChange={(v) => setRecipeServings(typeof v === "string" ? parseFloat(v) || 1 : (v || 1))}
+        min={0.25}
+        step={0.5}
       />
       <div>
         <label className="block text-sm font-medium mb-1">

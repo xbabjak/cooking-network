@@ -21,6 +21,7 @@ export type PostDraft = {
   recipeName?: string;
   recipeDescription?: string;
   recipeImageUrl?: string;
+  recipeServings?: number;
   postPrivate?: boolean;
   ingredients?: PostDraftIngredient[];
 };
@@ -55,6 +56,10 @@ export function getPostDraft(key: string): PostDraft | null {
         typeof d.recipeDescription === "string" ? d.recipeDescription : undefined,
       recipeImageUrl:
         typeof d.recipeImageUrl === "string" ? d.recipeImageUrl : undefined,
+      recipeServings:
+        typeof d.recipeServings === "number" && d.recipeServings > 0
+          ? d.recipeServings
+          : undefined,
       postPrivate:
         typeof d.postPrivate === "boolean"
           ? d.postPrivate

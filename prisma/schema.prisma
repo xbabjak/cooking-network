@@ -169,6 +169,7 @@ model Recipe {
   name        String
   description String?
   imageUrl    String?
+  servings    Float?
   authorId    String?
   isPrivate   Boolean  @default(false)
   createdAt   DateTime @default(now())

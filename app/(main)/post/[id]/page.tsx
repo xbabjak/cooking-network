@@ -4,8 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPostById } from "@/lib/posts";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { DoneCookingButton } from "@/components/done-cooking";
-import { BookmarkButton } from "@/components/bookmark-button";
+import { RecipeWithServings } from "@/components/recipe-with-servings";
 import { sanitizeHtml } from "@/lib/html-utils";
 
 type Props = { params: Promise<{ id: string }> };
@@ -119,90 +118,21 @@ export default async function PostPage({ params }: Props) {
           {!canViewRecipe ? (
             <p className="text-muted text-sm">This recipe is private.</p>
           ) : (
-          <div className="flex gap-4 items-start justify-between">
-            <div className="flex gap-4 items-start min-w-0 flex-1">
-            {post.recipe.imageUrl && (
-              <img
-                src={post.recipe.imageUrl}
-                alt=""
-                className="w-20 h-20 object-cover rounded flex-shrink-0"
-              />
-            )}
-            <div className="min-w-0 flex-1">
-              <h2 className="font-semibold text-lg">Recipe: {post.recipe.name}</h2>
-          {post.recipe.description && (
-            <p className="text-muted mt-1">
-              {post.recipe.description}
-            </p>
-          )}
-          <h3 className="font-medium mt-3">Ingredients</h3>
-          <ul className="list-disc list-inside mt-1">
-            {(() => {
-              const ings = post.recipe!.ingredients;
-              const seenGroups = new Set<string | null>();
-              const items: React.ReactNode[] = [];
-              for (const ing of ings) {
-                if (!ing.oneOfGroupId) {
-                  items.push(
-                    <li key={ing.id}>
-                      {ing.groceryItem.name}
-                      {ing.optional ? " (optional)" : ""}
-                      {ing.quantity > 0 && ` — ${ing.quantity} ${ing.unit || ""}`}
-                    </li>
-                  );
-                } else {
-                  if (seenGroups.has(ing.oneOfGroupId)) continue;
-                  seenGroups.add(ing.oneOfGroupId);
-                  const group = ings.filter((i) => i.oneOfGroupId === ing.oneOfGroupId);
-                  const partNodes = group.map((i, idx) => {
-                    const label = `${i.groceryItem.name}${i.quantity > 0 ? ` — ${i.quantity} ${i.unit || ""}` : ""}`;
-                    return (
-                      <span key={i.id}>
-                        {idx > 0 && (
-                          <span className="text-muted text-sm font-normal mx-1"> or </span>
-                        )}
-                        {label}
-                      </span>
-                    );
-                  });
-                  items.push(
-                    <li key={ing.oneOfGroupId!}>
-                      {partNodes}
-                      {group.some((i) => i.optional) ? " (optional)" : ""}
-                    </li>
-                  );
-                }
-              }
-              return <>{items}</>;
-            })()}
-          </ul>
-          {session?.user && (
-            <>
-              <p className="mt-1 text-sm text-muted-foreground">
-                You&apos;ve made this {userCookCount} time{userCookCount !== 1 ? "s" : ""}.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2 items-center">
-                <DoneCookingButton
-                  recipeId={post.recipe.id}
-                  recipeName={post.recipe.name}
-                  postId={post.id}
-                  skipConfirmFromSettings={skipDoneCookingConfirm}
-                  recipeIngredients={post.recipe.ingredients}
-                />
-              </div>
-            </>
-          )}
-            </div>
-            </div>
-            {session?.user && (
-              <div className="shrink-0 pt-0.5">
-                <BookmarkButton
-                  recipeId={post.recipe.id}
-                  initialBookmarked={bookmarkExists}
-                />
-              </div>
-            )}
-          </div>
+            <RecipeWithServings
+              recipe={{
+                id: post.recipe.id,
+                name: post.recipe.name,
+                description: post.recipe.description,
+                imageUrl: post.recipe.imageUrl,
+                servings: post.recipe.servings,
+                ingredients: post.recipe.ingredients,
+              }}
+              postId={post.id}
+              skipDoneCookingConfirm={skipDoneCookingConfirm}
+              userCookCount={userCookCount}
+              bookmarkExists={bookmarkExists}
+              hasUser={!!session?.user}
+            />
           )}
         </div>
       )}

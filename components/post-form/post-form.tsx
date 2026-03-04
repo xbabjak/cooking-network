@@ -67,6 +67,9 @@ export function PostForm({
   const [recipeImageUrl, setRecipeImageUrl] = useState(
     initialRecipe?.imageUrl ?? ""
   );
+  const [recipeServings, setRecipeServings] = useState(
+    initialRecipe?.servings ?? 1
+  );
   const [postPrivate, setPostPrivate] = useState(
     initialPostPrivate ?? initialRecipe?.isPrivate ?? false
   );
@@ -103,6 +106,7 @@ export function PostForm({
     setRecipeName(draft.recipeName ?? "");
     setRecipeDescription(draft.recipeDescription ?? "");
     setRecipeImageUrl(draft.recipeImageUrl ?? "");
+    setRecipeServings(draft.recipeServings ?? 1);
     setPostPrivate(draft.postPrivate ?? false);
     if (draft.ingredients !== undefined) {
       setIngredients(
@@ -161,6 +165,7 @@ export function PostForm({
         recipeName: type === "recipe" ? recipeName : undefined,
         recipeDescription: type === "recipe" ? recipeDescription : undefined,
         recipeImageUrl: type === "recipe" ? recipeImageUrl : undefined,
+        recipeServings: type === "recipe" ? recipeServings : undefined,
         postPrivate,
         ingredients:
           type === "recipe"
@@ -183,6 +188,7 @@ export function PostForm({
     recipeName,
     recipeDescription,
     recipeImageUrl,
+    recipeServings,
     postPrivate,
     ingredients,
     editor,
@@ -293,6 +299,7 @@ export function PostForm({
       formData.set("recipeName", recipeName);
       formData.set("recipeDescription", recipeDescription);
       formData.set("recipeImageUrl", recipeImageUrl);
+      formData.set("recipeServings", String(recipeServings));
       formData.set(
         "recipeIngredients",
         JSON.stringify(
@@ -351,6 +358,7 @@ export function PostForm({
     setRecipeName("");
     setRecipeDescription("");
     setRecipeImageUrl("");
+    setRecipeServings(1);
     setPostPrivate(false);
     setIngredients([
       {
@@ -496,6 +504,8 @@ export function PostForm({
           setRecipeDescription={setRecipeDescription}
           recipeImageUrl={recipeImageUrl}
           setRecipeImageUrl={setRecipeImageUrl}
+          recipeServings={recipeServings}
+          setRecipeServings={setRecipeServings}
           ingredients={ingredients}
           groceryItemsMap={groceryItemsMap}
           initialGroceryItems={initialGroceryItems}

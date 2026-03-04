@@ -374,7 +374,8 @@ export type DoneCookingPreviewRow = {
 
 export async function getDoneCookingPreview(
   recipeId: string,
-  chosenIngredientIds?: string[]
+  chosenIngredientIds?: string[],
+  servings?: number
 ): Promise<{ error?: string; preview?: DoneCookingPreviewRow[] }> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { error: "Unauthorized" };
@@ -386,6 +387,14 @@ export async function getDoneCookingPreview(
     },
   });
   if (!recipe) return { error: "Recipe not found" };
+
+  const recipeServingsValue = (recipe as { servings?: number | null }).servings;
+  const recipeServings =
+    recipeServingsValue != null && recipeServingsValue > 0
+      ? recipeServingsValue
+      : 1;
+  const userServings =
+    servings != null && servings > 0 ? servings : recipeServings;
 
   const ingredientsToConsume =
     chosenIngredientIds != null && chosenIngredientIds.length > 0
@@ -401,13 +410,14 @@ export async function getDoneCookingPreview(
 
   const preview: DoneCookingPreviewRow[] = [];
   for (const ing of ingredientsToConsume) {
+    const effectiveQty = ing.quantity * (userServings / recipeServings);
     const grocery = groceryByItemId.get(ing.groceryItemId);
     const name = ing.groceryItem.name;
     if (!grocery) {
       preview.push({
         ingredientId: ing.id,
         groceryItemName: name,
-        recipeQuantity: ing.quantity,
+        recipeQuantity: effectiveQty,
         recipeUnit: (ing.unit ?? "").trim() || "items",
         inInventory: false,
         userCurrentQuantity: 0,
@@ -419,15 +429,15 @@ export async function getDoneCookingPreview(
     }
     const ingUnit = (ing.unit ?? "").trim() || "items";
     const toDeduct =
-      (await convertQuantity(ing.quantity, ingUnit, grocery.unit)) ??
-      (ingUnit === grocery.unit ? ing.quantity : null);
+      (await convertQuantity(effectiveQty, ingUnit, grocery.unit)) ??
+      (ingUnit === grocery.unit ? effectiveQty : null);
     const quantityToDeduct = toDeduct != null ? Math.max(0, toDeduct) : 0;
     const newQuantity =
       Math.round(Math.max(0, grocery.quantity - quantityToDeduct) * 100) / 100;
     preview.push({
       ingredientId: ing.id,
       groceryItemName: name,
-      recipeQuantity: ing.quantity,
+      recipeQuantity: effectiveQty,
       recipeUnit: ingUnit,
       inInventory: true,
       userCurrentQuantity: grocery.quantity,
@@ -443,7 +453,8 @@ export async function consumeRecipeIngredients(
   recipeId: string,
   postId?: string,
   chosenIngredientIds?: string[],
-  deductionOverrides?: { ingredientId: string; quantityToDeduct: number }[]
+  deductionOverrides?: { ingredientId: string; quantityToDeduct: number }[],
+  servings?: number
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { error: "Unauthorized" };
@@ -453,6 +464,15 @@ export async function consumeRecipeIngredients(
     include: { ingredients: true },
   });
   if (!recipe) return { error: "Recipe not found" };
+
+  const recipeServingsValueConsume = (recipe as { servings?: number | null })
+    .servings;
+  const recipeServingsConsume =
+    recipeServingsValueConsume != null && recipeServingsValueConsume > 0
+      ? recipeServingsValueConsume
+      : 1;
+  const userServingsConsume =
+    servings != null && servings > 0 ? servings : recipeServingsConsume;
 
   const ingredientsToConsume =
     chosenIngredientIds != null && chosenIngredientIds.length > 0
@@ -479,10 +499,12 @@ export async function consumeRecipeIngredients(
       } else if (useOnlyOverrides) {
         continue;
       } else {
+        const effectiveQty =
+          ing.quantity * (userServingsConsume / recipeServingsConsume);
         const ingUnit = (ing.unit ?? "").trim() || "items";
         const converted =
-          (await convertQuantity(ing.quantity, ingUnit, grocery.unit)) ??
-          (ingUnit === grocery.unit ? ing.quantity : null);
+          (await convertQuantity(effectiveQty, ingUnit, grocery.unit)) ??
+          (ingUnit === grocery.unit ? effectiveQty : null);
         if (converted == null) continue;
         toDeduct = converted;
       }
