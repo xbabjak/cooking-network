@@ -224,10 +224,90 @@ export async function addGroceriesFromReceipt(
   return { success: true, added };
 }
 
+export type DoneCookingPreviewRow = {
+  ingredientId: string;
+  groceryItemName: string;
+  recipeQuantity: number;
+  recipeUnit: string;
+  inInventory: boolean;
+  userCurrentQuantity: number;
+  userUnit: string;
+  quantityToDeduct: number;
+  newQuantity: number;
+};
+
+export async function getDoneCookingPreview(
+  recipeId: string,
+  chosenIngredientIds?: string[]
+): Promise<{ error?: string; preview?: DoneCookingPreviewRow[] }> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
+  const recipe = await prisma.recipe.findUnique({
+    where: { id: recipeId },
+    include: {
+      ingredients: { include: { groceryItem: { select: { name: true } } } },
+    },
+  });
+  if (!recipe) return { error: "Recipe not found" };
+
+  const ingredientsToConsume =
+    chosenIngredientIds != null && chosenIngredientIds.length > 0
+      ? recipe.ingredients.filter((ing) => chosenIngredientIds.includes(ing.id))
+      : recipe.ingredients;
+
+  const userId = session.user.id;
+  const groceryItemIds = [...new Set(ingredientsToConsume.map((ing) => ing.groceryItemId))];
+  const userGroceries = await prisma.grocery.findMany({
+    where: { userId, groceryItemId: { in: groceryItemIds } },
+  });
+  const groceryByItemId = new Map(userGroceries.map((g) => [g.groceryItemId, g]));
+
+  const preview: DoneCookingPreviewRow[] = [];
+  for (const ing of ingredientsToConsume) {
+    const grocery = groceryByItemId.get(ing.groceryItemId);
+    const name = ing.groceryItem.name;
+    if (!grocery) {
+      preview.push({
+        ingredientId: ing.id,
+        groceryItemName: name,
+        recipeQuantity: ing.quantity,
+        recipeUnit: (ing.unit ?? "").trim() || "items",
+        inInventory: false,
+        userCurrentQuantity: 0,
+        userUnit: "",
+        quantityToDeduct: 0,
+        newQuantity: 0,
+      });
+      continue;
+    }
+    const ingUnit = (ing.unit ?? "").trim() || "items";
+    const toDeduct =
+      (await convertQuantity(ing.quantity, ingUnit, grocery.unit)) ??
+      (ingUnit === grocery.unit ? ing.quantity : null);
+    const quantityToDeduct = toDeduct != null ? Math.max(0, toDeduct) : 0;
+    const newQuantity =
+      Math.round(Math.max(0, grocery.quantity - quantityToDeduct) * 100) / 100;
+    preview.push({
+      ingredientId: ing.id,
+      groceryItemName: name,
+      recipeQuantity: ing.quantity,
+      recipeUnit: ingUnit,
+      inInventory: true,
+      userCurrentQuantity: grocery.quantity,
+      userUnit: grocery.unit,
+      quantityToDeduct,
+      newQuantity,
+    });
+  }
+  return { preview };
+}
+
 export async function consumeRecipeIngredients(
   recipeId: string,
   postId?: string,
-  chosenIngredientIds?: string[]
+  chosenIngredientIds?: string[],
+  deductionOverrides?: { ingredientId: string; quantityToDeduct: number }[]
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { error: "Unauthorized" };
@@ -243,6 +323,11 @@ export async function consumeRecipeIngredients(
       ? recipe.ingredients.filter((ing) => chosenIngredientIds.includes(ing.id))
       : recipe.ingredients;
 
+  const overrideByIngredientId = new Map(
+    (deductionOverrides ?? []).map((o) => [o.ingredientId, o.quantityToDeduct])
+  );
+  const useOnlyOverrides = deductionOverrides !== undefined;
+
   const userId = session.user.id;
 
   await prisma.$transaction(async (tx) => {
@@ -251,11 +336,20 @@ export async function consumeRecipeIngredients(
         where: { userId, groceryItemId: ing.groceryItemId },
       });
       if (!grocery) continue;
-      const ingUnit = (ing.unit ?? "").trim() || "items";
-      const toDeduct =
-        (await convertQuantity(ing.quantity, ingUnit, grocery.unit)) ??
-        (ingUnit === grocery.unit ? ing.quantity : null);
-      if (toDeduct == null) continue;
+      const overrideQty = overrideByIngredientId.get(ing.id);
+      let toDeduct: number;
+      if (overrideQty !== undefined) {
+        toDeduct = Math.max(0, overrideQty);
+      } else if (useOnlyOverrides) {
+        continue;
+      } else {
+        const ingUnit = (ing.unit ?? "").trim() || "items";
+        const converted =
+          (await convertQuantity(ing.quantity, ingUnit, grocery.unit)) ??
+          (ingUnit === grocery.unit ? ing.quantity : null);
+        if (converted == null) continue;
+        toDeduct = converted;
+      }
       const newQuantity = Math.max(
         0,
         Math.round((grocery.quantity - toDeduct) * 100) / 100
