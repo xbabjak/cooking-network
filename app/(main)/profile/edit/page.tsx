@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ProfileEditForm } from "@/components/profile-edit-form";
+import { CHEF_AVATAR_URLS } from "@/lib/avatar";
 
 export const metadata: Metadata = {
   title: "Edit profile | Cooking Network",
@@ -23,6 +24,7 @@ export default async function ProfileEditPage() {
       name: true,
       username: true,
       image: true,
+      googleImageUrl: true,
       bio: true,
       password: true,
       skipDoneCookingConfirm: true,
@@ -30,6 +32,12 @@ export default async function ProfileEditPage() {
   });
 
   if (!user) redirect("/login");
+
+  const googleAccount = await prisma.account.findFirst({
+    where: { userId: session.user.id, provider: "google" },
+  });
+  const hasGoogleAccount = !!googleAccount;
+  const googleImageUrl = user.googleImageUrl ?? null;
 
   return (
     <div className="max-w-2xl">
@@ -41,6 +49,9 @@ export default async function ProfileEditPage() {
         initialBio={user.bio}
         initialSkipDoneCookingConfirm={user.skipDoneCookingConfirm}
         canChangePassword={!!user.password}
+        hasGoogleAccount={hasGoogleAccount}
+        googleImageUrl={googleImageUrl}
+        chefAvatarUrls={CHEF_AVATAR_URLS}
       />
     </div>
   );

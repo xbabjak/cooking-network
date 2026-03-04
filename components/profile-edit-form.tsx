@@ -1,8 +1,9 @@
 "use client";
 
 import { TextInput, Textarea, PasswordInput } from "@mantine/core";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   getProfileDraft,
   setProfileDraft,
@@ -16,6 +17,9 @@ type Props = {
   initialBio: string | null;
   initialSkipDoneCookingConfirm: boolean;
   canChangePassword: boolean;
+  hasGoogleAccount?: boolean;
+  googleImageUrl?: string | null;
+  chefAvatarUrls?: string[];
 };
 
 export function ProfileEditForm({
@@ -25,8 +29,13 @@ export function ProfileEditForm({
   initialBio,
   initialSkipDoneCookingConfirm,
   canChangePassword,
+  hasGoogleAccount = false,
+  googleImageUrl = null,
+  chefAvatarUrls = [],
 }: Props) {
   const router = useRouter();
+  const { update: updateSession } = useSession();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(initialName ?? "");
   const [username, setUsername] = useState(initialUsername ?? "");
   const [image, setImage] = useState(initialImage ?? "");
@@ -40,6 +49,58 @@ export function ProfileEditForm({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [loadingGeneratedAvatar, setLoadingGeneratedAvatar] = useState(false);
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      setError("Please choose a JPEG, PNG, or WebP image (max 2MB).");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image must be 2MB or smaller.");
+      return;
+    }
+    setError("");
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const res = await fetch("/api/user/avatar", { method: "POST", body: formData });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? "Upload failed.");
+        return;
+      }
+      if (data.url) setImage(data.url);
+    } catch {
+      setError("Upload failed.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function handleUseGeneratedAvatar() {
+    setError("");
+    setLoadingGeneratedAvatar(true);
+    try {
+      const res = await fetch("/api/user/avatar/generated");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? "Failed to get generated avatar.");
+        return;
+      }
+      if (data.url) setImage(data.url);
+    } catch {
+      setError("Failed to get generated avatar.");
+    } finally {
+      setLoadingGeneratedAvatar(false);
+    }
+  }
 
   // Restore draft from localStorage on mount
   useEffect(() => {
@@ -137,6 +198,7 @@ export function ProfileEditForm({
       setNewPassword("");
       setConfirmPassword("");
       clearProfileDraft();
+      await updateSession();
       router.refresh();
     } catch {
       setError("Something went wrong.");
@@ -165,12 +227,78 @@ export function ProfileEditForm({
         minLength={2}
         maxLength={30}
       />
-      <TextInput
-        label="Profile image URL"
-        value={image}
-        onChange={(e) => setImage(e.currentTarget.value)}
-        placeholder="https://..."
-      />
+
+      <div className="space-y-3">
+        <p className="text-sm font-medium">Profile picture</p>
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="flex-shrink-0">
+            {image ? (
+              <img
+                src={image}
+                alt=""
+                className="w-16 h-16 rounded-full object-cover border border-border"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-surface-alt border border-border flex items-center justify-center text-2xl font-semibold text-muted-foreground">
+                {(name || username || "?")[0]}
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 min-w-0">
+            {chefAvatarUrls.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {chefAvatarUrls.map((url) => (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => setImage(url)}
+                    className={`w-9 h-9 rounded-full overflow-hidden border-2 flex-shrink-0 ${
+                      image === url ? "border-primary" : "border-border hover:border-muted-foreground"
+                    }`}
+                  >
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleUseGeneratedAvatar}
+              disabled={loadingGeneratedAvatar}
+              className="text-sm text-left text-muted-foreground hover:text-foreground disabled:opacity-50"
+            >
+              {loadingGeneratedAvatar ? "Loading…" : "Use my generated avatar"}
+            </button>
+            {hasGoogleAccount && googleImageUrl && (
+              <button
+                type="button"
+                onClick={() => setImage(googleImageUrl)}
+                className="text-sm text-left text-muted-foreground hover:text-foreground"
+              >
+                Use my Google photo
+              </button>
+            )}
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="text-sm text-primary hover:underline disabled:opacity-50"
+              >
+                {uploadingAvatar ? "Uploading…" : "Upload my own"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Textarea
         label="Bio"
         value={bio}

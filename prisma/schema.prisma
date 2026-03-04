@@ -13,6 +13,7 @@ model User {
   name                    String?
   username                String?   @unique
   image                   String?
+  googleImageUrl          String?
   bio                     String?
   password                String?
   skipDoneCookingConfirm  Boolean   @default(false)

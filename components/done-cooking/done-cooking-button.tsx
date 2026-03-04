@@ -57,7 +57,7 @@ export function DoneCookingButton(props: DoneCookingButtonProps) {
           setDontAskAgain={setDontAskAgain}
           onClose={closeConfirm}
           onConfirm={handleConfirm}
-          confirmLoading={previewLoading}
+          confirmLoading={loading || previewLoading}
         />
       )}
     </div>

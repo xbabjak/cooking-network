@@ -148,6 +148,7 @@ export function useDoneCooking({
   );
 
   const handleConfirm = useCallback(async () => {
+    setLoading(true);
     setShowConfirm(false);
     if (dontAskAgain) {
       try {

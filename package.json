@@ -11,13 +11,16 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "npx tsx prisma/seed.ts",
+    "generate-avatars": "tsx scripts/generate-chef-avatars.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
     "@mantine/charts": "^8.3.15",
     "@mantine/core": "^8.3.15",
+    "@mantine/hooks": "^8.3.15",
     "@mantine/notifications": "^8.3.15",
     "@mantine/tiptap": "^8.3.15",
+    "@multiavatar/multiavatar": "^1.0.7",
     "@next-auth/prisma-adapter": "^1.0.7",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",

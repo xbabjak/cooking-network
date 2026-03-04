@@ -4,12 +4,21 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateMultiavatarUrl } from "@/lib/avatar";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
+  },
+  events: {
+    async createUser({ user }) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { image: await getOrCreateMultiavatarUrl(user.id) },
+      });
+    },
   },
   providers: [
     GoogleProvider({
@@ -42,6 +51,32 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google" && profile) {
+        const picture =
+          (profile as { picture?: string }).picture ??
+          (typeof (profile as { image?: string }).image === "string"
+            ? (profile as { image: string }).image
+            : null);
+        if (picture && user.id) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { googleImageUrl: picture },
+          });
+        } else if (picture && user.email) {
+          const existing = await prisma.user.findUnique({
+            where: { email: user.email },
+          });
+          if (existing) {
+            await prisma.user.update({
+              where: { id: existing.id },
+              data: { googleImageUrl: picture },
+            });
+          }
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -50,9 +85,17 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token.id) {
         session.user.id = token.id;
         session.user.username = token.username ?? null;
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id },
+          select: { image: true, name: true },
+        });
+        if (dbUser) {
+          session.user.image = dbUser.image ?? undefined;
+          session.user.name = dbUser.name ?? undefined;
+        }
       }
       return session;
     },

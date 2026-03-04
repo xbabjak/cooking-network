@@ -13,7 +13,16 @@ const profileSchema = z.object({
       z.literal(""),
     ])
     .optional(),
-  image: z.union([z.string().url(), z.literal("")]).optional(),
+  image: z
+    .union([
+      z.string().url(),
+      z
+        .string()
+        .min(1)
+        .refine((s) => s.startsWith("/") && !s.includes("..")),
+      z.literal(""),
+    ])
+    .optional(),
   bio: z.string().optional(),
   skipDoneCookingConfirm: z.boolean().optional(),
 });
