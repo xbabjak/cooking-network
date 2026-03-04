@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getPostById } from "@/lib/posts";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { DoneCookingButton } from "@/components/done-cooking-button";
+import { DoneCookingButton } from "@/components/done-cooking";
 import { BookmarkButton } from "@/components/bookmark-button";
 import { sanitizeHtml } from "@/lib/html-utils";
 
