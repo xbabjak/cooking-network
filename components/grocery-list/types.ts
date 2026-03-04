@@ -12,4 +12,6 @@ export type Grocery = {
 export type GroceryListProps = {
   groceries: Grocery[];
   initialGroceryItems: GroceryItemOption[];
+  /** Optional "Use by <date>" label per grocery id for close-to-spoiling items */
+  useByByGroceryId?: Record<string, string>;
 };

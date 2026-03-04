@@ -73,19 +73,155 @@ export async function addGrocery(formData: FormData) {
     ? unit
     : allowedUnits[0]?.symbol ?? "items";
 
-  const data = {
-    userId: session.user.id,
+  const quantity = parsed.data.quantity;
+  const lowThreshold = parsed.data.lowThreshold ?? 0;
+
+  const existing = await prisma.grocery.findFirst({
+    where: { userId: session.user.id, groceryItemId },
+    include: { groceryItem: { select: { name: true } } },
+  });
+
+  if (!existing) {
+    const data = {
+      userId: session.user.id,
+      groceryItemId,
+      unit: normalizedUnit,
+      quantity,
+      lowThreshold,
+      addedAt: new Date(),
+    } as unknown as Prisma.GroceryUncheckedCreateInput;
+    await prisma.grocery.create({ data });
+    revalidatePath("/groceries");
+    return { success: true };
+  }
+
+  if (existing.unit === normalizedUnit) {
+    await prisma.grocery.update({
+      where: { id: existing.id },
+      data: {
+        quantity: existing.quantity + quantity,
+        lowThreshold: Math.max(existing.lowThreshold, lowThreshold),
+      },
+    });
+    revalidatePath("/groceries");
+    return { success: true };
+  }
+
+  return {
+    needsUnitResolution: true,
+    existing: {
+      id: existing.id,
+      quantity: existing.quantity,
+      unit: existing.unit,
+      lowThreshold: existing.lowThreshold,
+      groceryItemName: existing.groceryItem.name,
+    },
+    incoming: { quantity, unit: normalizedUnit, lowThreshold },
     groceryItemId,
-    unit: normalizedUnit,
-    quantity: parsed.data.quantity,
-    lowThreshold: parsed.data.lowThreshold ?? 0,
-    // updatedAt is optional and will default to now()
-  } as unknown as Prisma.GroceryUncheckedCreateInput;
+  };
+}
 
-  await prisma.grocery.create({ data });
+export type AddGroceryUnitConflictPayload = {
+  needsUnitResolution: true;
+  existing: {
+    id: string;
+    quantity: number;
+    unit: string;
+    lowThreshold: number;
+    groceryItemName: string;
+  };
+  incoming: { quantity: number; unit: string; lowThreshold: number };
+  groceryItemId: string;
+};
 
-  revalidatePath("/groceries");
-  return { success: true };
+const mergeGroceryAddSchema = z.object({
+  resolution: z.enum(["addInExistingUnit", "switchToNewUnit", "addAsSeparate"]),
+  existingGroceryId: z.string().min(1),
+  groceryItemId: z.string().min(1),
+  quantity: z.number().min(0),
+  unit: z.string().max(20),
+  lowThreshold: z.number().min(0).optional(),
+});
+
+export async function mergeGroceryAdd(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
+  const raw = {
+    resolution: formData.get("resolution") as string,
+    existingGroceryId: formData.get("existingGroceryId") as string,
+    groceryItemId: formData.get("groceryItemId") as string,
+    quantity: parseFloat((formData.get("quantity") as string) || "0"),
+    unit: formData.get("unit") as string,
+    lowThreshold: parseFloat((formData.get("lowThreshold") as string) || "0"),
+  };
+  const parsed = mergeGroceryAddSchema.safeParse(raw);
+  if (!parsed.success) return { error: "Invalid data" };
+
+  const { resolution, existingGroceryId, groceryItemId, quantity, unit, lowThreshold } =
+    parsed.data;
+
+  const existing = await prisma.grocery.findFirst({
+    where: { id: existingGroceryId, userId: session.user.id },
+  });
+  if (!existing) return { error: "Existing grocery not found" };
+  if (existing.groceryItemId !== groceryItemId)
+    return { error: "Grocery item mismatch" };
+
+  const allowedUnits = await getAllowedUnitsForItem(groceryItemId);
+  const allowedSymbols = new Set(allowedUnits.map((u) => u.symbol));
+  const normalizedUnit = allowedSymbols.has(unit) ? unit : allowedUnits[0]?.symbol ?? "items";
+
+  if (resolution === "addAsSeparate") {
+    const data = {
+      userId: session.user.id,
+      groceryItemId,
+      unit: normalizedUnit,
+      quantity,
+      lowThreshold: lowThreshold ?? 0,
+      addedAt: new Date(),
+    } as unknown as Prisma.GroceryUncheckedCreateInput;
+    await prisma.grocery.create({ data });
+    revalidatePath("/groceries");
+    return { success: true };
+  }
+
+  if (resolution === "addInExistingUnit") {
+    const converted = await convertQuantity(quantity, normalizedUnit, existing.unit);
+    if (converted == null)
+      return { error: "Cannot convert between these units. Add as separate entry instead." };
+    await prisma.grocery.update({
+      where: { id: existing.id },
+      data: {
+        quantity: existing.quantity + converted,
+        lowThreshold: Math.max(existing.lowThreshold, lowThreshold ?? 0),
+      },
+    });
+    revalidatePath("/groceries");
+    return { success: true };
+  }
+
+  if (resolution === "switchToNewUnit") {
+    const convertedExisting = await convertQuantity(
+      existing.quantity,
+      existing.unit,
+      normalizedUnit
+    );
+    const newQuantity =
+      convertedExisting != null ? convertedExisting + quantity : quantity;
+    await prisma.grocery.update({
+      where: { id: existing.id },
+      data: {
+        quantity: newQuantity,
+        unit: normalizedUnit,
+        lowThreshold: Math.max(existing.lowThreshold, lowThreshold ?? 0),
+      },
+    });
+    revalidatePath("/groceries");
+    return { success: true };
+  }
+
+  return { error: "Invalid resolution" };
 }
 
 export async function updateGrocery(formData: FormData) {
@@ -201,15 +337,15 @@ export async function addGroceriesFromReceipt(
           data: { quantity: existing.quantity + qty },
         });
       } else {
-        await prisma.grocery.create({
-          data: {
-            userId,
-            groceryItemId,
-            unit: "items",
-            quantity: qty,
-            lowThreshold: 0,
-          },
-        });
+        const data = {
+          userId,
+          groceryItemId,
+          unit: "items",
+          quantity: qty,
+          lowThreshold: 0,
+          addedAt: new Date(),
+        } as unknown as Prisma.GroceryUncheckedCreateInput;
+        await prisma.grocery.create({ data });
       }
       added++;
     } catch {

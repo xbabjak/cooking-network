@@ -9,6 +9,29 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+const WARN_DAYS = 2;
+
+function addDays(date: Date, days: number): Date {
+  const out = new Date(date);
+  out.setUTCDate(out.getUTCDate() + days);
+  return out;
+}
+
+function isCloseToSpoiling(
+  addedAt: Date | null,
+  shelfLifeDays: number | null
+): { close: boolean; expiresAt: Date | null } {
+  if (addedAt == null || shelfLifeDays == null)
+    return { close: false, expiresAt: null };
+  const expiresAt = addDays(addedAt, shelfLifeDays);
+  const now = new Date();
+  const threshold = addDays(now, WARN_DAYS);
+  return {
+    close: expiresAt <= threshold,
+    expiresAt,
+  };
+}
+
 export default async function GroceriesPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login?callbackUrl=/groceries");
@@ -29,6 +52,22 @@ export default async function GroceriesPage() {
 
   const lowStock = groceries.filter((g) => g.quantity < g.lowThreshold);
 
+  const closeToSpoiling = groceries
+    .map((g) => {
+      const { close, expiresAt } = isCloseToSpoiling(
+        g.addedAt,
+        g.groceryItem.shelfLifeDays
+      );
+      return close ? { grocery: g, expiresAt } : null;
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+
+  const useByByGroceryId: Record<string, string> = {};
+  for (const { grocery, expiresAt } of closeToSpoiling) {
+    if (expiresAt)
+      useByByGroceryId[grocery.id] = `Use by ${expiresAt.toLocaleDateString(undefined, { dateStyle: "medium" })}`;
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -43,6 +82,26 @@ export default async function GroceriesPage() {
           </Link>
         </div>
       </div>
+
+      {closeToSpoiling.length > 0 && (
+        <section className="p-4 border border-border rounded-lg bg-surface-alt">
+          <h2 className="font-semibold text-primary">
+            Close to spoiling – use soon
+          </h2>
+          <ul className="mt-2 space-y-1">
+            {closeToSpoiling.map(({ grocery, expiresAt }) => (
+              <li key={grocery.id} className="text-sm text-foreground">
+                {grocery.groceryItem.name}: use by{" "}
+                {expiresAt
+                  ? expiresAt.toLocaleDateString(undefined, {
+                      dateStyle: "medium",
+                    })
+                  : ""}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {lowStock.length > 0 && (
         <section className="p-4 border border-border rounded-lg bg-surface-alt">
@@ -59,7 +118,11 @@ export default async function GroceriesPage() {
         </section>
       )}
 
-      <GroceryList groceries={groceries} initialGroceryItems={initialGroceryItems} />
+      <GroceryList
+        groceries={groceries}
+        initialGroceryItems={initialGroceryItems}
+        useByByGroceryId={Object.keys(useByByGroceryId).length > 0 ? useByByGroceryId : undefined}
+      />
     </div>
   );
 }

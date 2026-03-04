@@ -6,6 +6,7 @@ import { GroceryRow } from "./GroceryRow";
 
 type Props = {
   groceries: Grocery[];
+  useByByGroceryId?: Record<string, string>;
   onDecrement: (id: string) => void;
   onEdit: (grocery: Grocery) => void;
   onDelete: (id: string) => void;
@@ -13,6 +14,7 @@ type Props = {
 
 export function GroceryListByType({
   groceries,
+  useByByGroceryId,
   onDecrement,
   onEdit,
   onDelete,
@@ -30,6 +32,7 @@ export function GroceryListByType({
               <GroceryRow
                 key={g.id}
                 grocery={g}
+                useByLabel={useByByGroceryId?.[g.id]}
                 onDecrement={onDecrement}
                 onEdit={onEdit}
                 onDelete={onDelete}

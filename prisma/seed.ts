@@ -225,6 +225,32 @@ async function main() {
       itemCount++;
     }
   }
+
+  const shelfLifeByItem: Record<string, number> = {
+    Milk: 7,
+    Bread: 5,
+    Banana: 5,
+    Yogurt: 10,
+    Cream: 7,
+    "Sour cream": 14,
+    Eggs: 21,
+    Butter: 30,
+    Lettuce: 5,
+    Tomatoes: 7,
+    Strawberries: 5,
+    Blueberries: 7,
+    "Chicken breast": 2,
+    "Ground beef": 2,
+    Salmon: 2,
+    Tuna: 2,
+  };
+  for (const [name, days] of Object.entries(shelfLifeByItem)) {
+    await prisma.groceryItem.updateMany({
+      where: { name },
+      data: { shelfLifeDays: days },
+    });
+  }
+
   console.log("Seeded grocery items:", itemCount);
 
   const recipes = [

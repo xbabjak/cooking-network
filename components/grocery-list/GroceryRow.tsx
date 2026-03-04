@@ -4,6 +4,7 @@ import type { Grocery } from "./types";
 
 type Props = {
   grocery: Grocery;
+  useByLabel?: string;
   onDecrement: (id: string) => void;
   onEdit: (grocery: Grocery) => void;
   onDelete: (id: string) => void;
@@ -11,6 +12,7 @@ type Props = {
 
 export function GroceryRow({
   grocery,
+  useByLabel,
   onDecrement,
   onEdit,
   onDelete,
@@ -23,6 +25,9 @@ export function GroceryRow({
           {grocery.quantity} {grocery.unit}
           {grocery.lowThreshold > 0 && (
             <span className="text-xs"> (low below {grocery.lowThreshold})</span>
+          )}
+          {useByLabel && (
+            <span className="text-xs text-primary ml-1">({useByLabel})</span>
           )}
         </span>
       </div>

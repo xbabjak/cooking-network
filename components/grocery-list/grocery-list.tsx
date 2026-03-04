@@ -3,6 +3,7 @@
 import { useGroceryList } from "./use-grocery-list";
 import { GroceryForm } from "./GroceryForm";
 import { EditGroceryModal } from "./EditGroceryModal";
+import { AddGroceryUnitConflictModal } from "./AddGroceryUnitConflictModal";
 import { GroceryListByType } from "./GroceryListByType";
 import type { GroceryListProps } from "./types";
 
@@ -15,6 +16,12 @@ export function GroceryList(props: GroceryListProps) {
     editModalOpened,
     openEditModal,
     closeEditModal,
+    unitConflictPayload,
+    unitConflictModalOpened,
+    closeUnitConflictModalAndClear,
+    handleResolveUnitConflict,
+    mergeLoading,
+    mergeError,
     groceryItemSearch,
     selectedGroceryItemId,
     unit,
@@ -71,6 +78,18 @@ export function GroceryList(props: GroceryListProps) {
         />
       )}
 
+      {unitConflictPayload && (
+        <AddGroceryUnitConflictModal
+          opened={unitConflictModalOpened}
+          onClose={closeUnitConflictModalAndClear}
+          existing={unitConflictPayload.existing}
+          incoming={unitConflictPayload.incoming}
+          onResolve={handleResolveUnitConflict}
+          loading={mergeLoading}
+          error={mergeError}
+        />
+      )}
+
       <EditGroceryModal
         opened={editModalOpened}
         onClose={() => {
@@ -96,6 +115,7 @@ export function GroceryList(props: GroceryListProps) {
 
       <GroceryListByType
         groceries={groceries}
+        useByByGroceryId={props.useByByGroceryId}
         onDecrement={handleDecrement}
         onEdit={(g) => {
           startEdit(g);

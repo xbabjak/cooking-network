@@ -4,10 +4,12 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useDisclosure } from "@mantine/hooks";
 import {
   addGrocery,
+  mergeGroceryAdd,
   updateGrocery,
   deleteGrocery,
   decrementGrocery,
 } from "@/lib/actions/groceries";
+import type { AddGroceryUnitConflictPayload } from "@/lib/actions/groceries";
 import { getGroceryItems } from "@/lib/grocery-items";
 import { getAllowedUnitsForItem, getAllUnits, type Unit } from "@/lib/units";
 import { groupGroceryItemsForAutocomplete } from "@/lib/grocery-autocomplete";
@@ -23,6 +25,13 @@ export function useGroceryList({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editModalOpened, { open: openEditModal, close: closeEditModal }] =
     useDisclosure(false);
+  const [unitConflictPayload, setUnitConflictPayload] = useState<AddGroceryUnitConflictPayload | null>(null);
+  const [
+    unitConflictModalOpened,
+    { open: openUnitConflictModal, close: closeUnitConflictModal },
+  ] = useDisclosure(false);
+  const [mergeLoading, setMergeLoading] = useState(false);
+  const [mergeError, setMergeError] = useState("");
   const [groceryItemSearch, setGroceryItemSearch] = useState("");
   const [selectedGroceryItemId, setSelectedGroceryItemId] = useState<
     string | null
@@ -176,6 +185,11 @@ export function useGroceryList({
         setError(result.error);
         return;
       }
+      if ("needsUnitResolution" in result && result.needsUnitResolution) {
+        setUnitConflictPayload(result as AddGroceryUnitConflictPayload);
+        openUnitConflictModal();
+        return;
+      }
       resetForm();
       window.location.reload();
     },
@@ -186,8 +200,41 @@ export function useGroceryList({
       quantity,
       lowThreshold,
       resetForm,
+      openUnitConflictModal,
     ]
   );
+
+  const handleResolveUnitConflict = useCallback(
+    async (resolution: "addInExistingUnit" | "switchToNewUnit" | "addAsSeparate") => {
+      if (!unitConflictPayload) return;
+      setMergeError("");
+      setMergeLoading(true);
+      const formData = new FormData();
+      formData.set("resolution", resolution);
+      formData.set("existingGroceryId", unitConflictPayload.existing.id);
+      formData.set("groceryItemId", unitConflictPayload.groceryItemId);
+      formData.set("quantity", String(unitConflictPayload.incoming.quantity));
+      formData.set("unit", unitConflictPayload.incoming.unit);
+      formData.set("lowThreshold", String(unitConflictPayload.incoming.lowThreshold));
+      const result = await mergeGroceryAdd(formData);
+      setMergeLoading(false);
+      if (result?.error) {
+        setMergeError(result.error);
+        return;
+      }
+      setUnitConflictPayload(null);
+      closeUnitConflictModal();
+      resetForm();
+      window.location.reload();
+    },
+    [unitConflictPayload, closeUnitConflictModal, resetForm]
+  );
+
+  const closeUnitConflictModalAndClear = useCallback(() => {
+    setUnitConflictPayload(null);
+    setMergeError("");
+    closeUnitConflictModal();
+  }, [closeUnitConflictModal]);
 
   const handleUpdate = useCallback(
     async (e: React.FormEvent) => {
@@ -243,6 +290,12 @@ export function useGroceryList({
     editModalOpened,
     openEditModal,
     closeEditModal,
+    unitConflictPayload,
+    unitConflictModalOpened,
+    closeUnitConflictModalAndClear,
+    handleResolveUnitConflict,
+    mergeLoading,
+    mergeError,
     groceryItemSearch,
     setGroceryItemSearch,
     selectedGroceryItemId,
