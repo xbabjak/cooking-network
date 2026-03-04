@@ -386,7 +386,7 @@ export function PostForm({
       />
       <div>
         <label className="block text-sm font-medium mb-1">Content</label>
-        <RichTextEditor editor={editor}>
+        <RichTextEditor editor={editor} className="rte-editor">
           <RichTextEditor.Toolbar>
             <RichTextEditor.ControlsGroup>
               <RichTextEditor.Bold />
