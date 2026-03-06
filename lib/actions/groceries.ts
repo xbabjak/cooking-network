@@ -121,6 +121,72 @@ export async function addGrocery(formData: FormData) {
   };
 }
 
+/** Add one grocery by params (for programmatic use e.g. planner bulk add). */
+export async function addGroceryByParams(params: {
+  groceryItemId: string;
+  unit: string;
+  quantity: number;
+  lowThreshold?: number;
+}): Promise<
+  | { success: true }
+  | { error: string }
+  | { needsUnitResolution: true; groceryItemId: string; [key: string]: unknown }
+> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
+  const { groceryItemId, quantity, lowThreshold = 0 } = params;
+  const unit = (params.unit ?? "items").trim() || "items";
+
+  const allowedUnits = await getAllowedUnitsForItem(groceryItemId);
+  const allowedSymbols = new Set(allowedUnits.map((u) => u.symbol));
+  const normalizedUnit = allowedSymbols.has(unit) ? unit : allowedUnits[0]?.symbol ?? "items";
+
+  const existing = await prisma.grocery.findFirst({
+    where: { userId: session.user.id, groceryItemId },
+    include: { groceryItem: { select: { name: true } } },
+  });
+
+  if (!existing) {
+    const data = {
+      userId: session.user.id,
+      groceryItemId,
+      unit: normalizedUnit,
+      quantity,
+      lowThreshold,
+      addedAt: new Date(),
+    } as unknown as Prisma.GroceryUncheckedCreateInput;
+    await prisma.grocery.create({ data });
+    revalidatePath("/groceries");
+    return { success: true };
+  }
+
+  if (existing.unit === normalizedUnit) {
+    await prisma.grocery.update({
+      where: { id: existing.id },
+      data: {
+        quantity: existing.quantity + quantity,
+        lowThreshold: Math.max(existing.lowThreshold, lowThreshold),
+      },
+    });
+    revalidatePath("/groceries");
+    return { success: true };
+  }
+
+  return {
+    needsUnitResolution: true,
+    existing: {
+      id: existing.id,
+      quantity: existing.quantity,
+      unit: existing.unit,
+      lowThreshold: existing.lowThreshold,
+      groceryItemName: existing.groceryItem.name,
+    },
+    incoming: { quantity, unit: normalizedUnit, lowThreshold },
+    groceryItemId,
+  };
+}
+
 export type AddGroceryUnitConflictPayload = {
   needsUnitResolution: true;
   existing: {

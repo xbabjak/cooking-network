@@ -41,6 +41,9 @@ export function Nav() {
           <Link href="/post/new" className={navLinkClass} onClick={closeDrawer}>
             New Post
           </Link>
+          <Link href="/planner" className={navLinkClass} onClick={closeDrawer}>
+            Meal Planner
+          </Link>
           <Link href="/groceries" className={navLinkClass} onClick={closeDrawer}>
             Groceries
           </Link>
@@ -168,6 +171,9 @@ export function Nav() {
             <>
               <Link href="/post/new" className={navLinkClass} onClick={closeDrawer}>
                 New Post
+              </Link>
+              <Link href="/planner" className={navLinkClass} onClick={closeDrawer}>
+                Meal Planner
               </Link>
               <Link href="/groceries" className={navLinkClass} onClick={closeDrawer}>
                 Groceries

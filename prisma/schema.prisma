@@ -30,6 +30,7 @@ model User {
   recipeReactions   RecipeReaction[]
   comments         Comment[]
   cookEvents        UserCookEvent[]
+  plannerEntries   PlannerEntry[]
 }
 
 model Account {
@@ -197,6 +198,20 @@ model Recipe {
   bookmarks  UserRecipeBookmark[]
   reactions RecipeReaction[]
   cookEvents UserCookEvent[]
+  plannerEntries PlannerEntry[]
+}
+
+model PlannerEntry {
+  id       String   @id @default(cuid())
+  userId   String
+  date     DateTime @db.Date
+  recipeId String
+  servings Float    @default(1)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
 }
 
 model UserRecipeCookCount {
