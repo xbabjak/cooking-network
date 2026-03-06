@@ -33,36 +33,63 @@ export default async function PostPage({ params }: Props) {
   let publicCookCount = 0;
   let userCookCount = 0;
   let bookmarkExists = false;
+  let likeCount = 0;
+  let dislikeCount = 0;
+  let userReaction: "like" | "dislike" | null = null;
   if (post.recipe && canViewRecipe) {
-    const [aggregate, userCountRow, bookmark] = await Promise.all([
-      prisma.userRecipeCookCount.aggregate({
-        where: { recipeId: post.recipe.id },
-        _sum: { count: true },
-      }),
-      session?.user?.id
-        ? prisma.userRecipeCookCount.findUnique({
-            where: {
-              userId_recipeId: {
-                userId: session.user.id,
-                recipeId: post.recipe.id,
+    const [aggregate, userCountRow, bookmark, likeCountRes, dislikeCountRes, userReactionRow] =
+      await Promise.all([
+        prisma.userRecipeCookCount.aggregate({
+          where: { recipeId: post.recipe.id },
+          _sum: { count: true },
+        }),
+        session?.user?.id
+          ? prisma.userRecipeCookCount.findUnique({
+              where: {
+                userId_recipeId: {
+                  userId: session.user.id,
+                  recipeId: post.recipe.id,
+                },
               },
-            },
-          })
-        : null,
-      session?.user?.id
-        ? prisma.userRecipeBookmark.findUnique({
-            where: {
-              userId_recipeId: {
-                userId: session.user.id,
-                recipeId: post.recipe.id,
+            })
+          : null,
+        session?.user?.id
+          ? prisma.userRecipeBookmark.findUnique({
+              where: {
+                userId_recipeId: {
+                  userId: session.user.id,
+                  recipeId: post.recipe.id,
+                },
               },
-            },
-          })
-        : null,
-    ]);
+            })
+          : null,
+        prisma.recipeReaction.count({
+          where: { recipeId: post.recipe.id, reaction: "like" },
+        }),
+        prisma.recipeReaction.count({
+          where: { recipeId: post.recipe.id, reaction: "dislike" },
+        }),
+        session?.user?.id
+          ? prisma.recipeReaction.findUnique({
+              where: {
+                userId_recipeId: {
+                  userId: session.user.id,
+                  recipeId: post.recipe.id,
+                },
+              },
+              select: { reaction: true },
+            })
+          : null,
+      ]);
     publicCookCount = aggregate._sum.count ?? 0;
     userCookCount = userCountRow?.count ?? 0;
     bookmarkExists = !!bookmark;
+    likeCount = likeCountRes;
+    dislikeCount = dislikeCountRes;
+    userReaction =
+      userReactionRow?.reaction === "like" || userReactionRow?.reaction === "dislike"
+        ? userReactionRow.reaction
+        : null;
   }
 
   return (
@@ -131,6 +158,9 @@ export default async function PostPage({ params }: Props) {
               skipDoneCookingConfirm={skipDoneCookingConfirm}
               userCookCount={userCookCount}
               bookmarkExists={bookmarkExists}
+              likeCount={likeCount}
+              dislikeCount={dislikeCount}
+              userReaction={userReaction}
               hasUser={!!session?.user}
             />
           )}

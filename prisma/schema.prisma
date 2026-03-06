@@ -27,6 +27,7 @@ model User {
   recipes           Recipe[]
   recipeCookCounts  UserRecipeCookCount[]
   bookmarks         UserRecipeBookmark[]
+  recipeReactions   RecipeReaction[]
   cookEvents        UserCookEvent[]
 }
 
@@ -179,6 +180,7 @@ model Recipe {
   ingredients RecipeIngredient[]
   cookCounts UserRecipeCookCount[]
   bookmarks  UserRecipeBookmark[]
+  reactions RecipeReaction[]
   cookEvents UserCookEvent[]
 }
 
@@ -204,6 +206,19 @@ model UserRecipeBookmark {
 
   @@unique([userId, recipeId])
   @@index([userId])
+  @@index([recipeId])
+}
+
+model RecipeReaction {
+  id       String @id @default(cuid())
+  userId   String
+  recipeId String
+  reaction String // "like" | "dislike"
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recipeId])
   @@index([recipeId])
 }
 

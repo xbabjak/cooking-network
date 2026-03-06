@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { NumberInput } from "@mantine/core";
 import { DoneCookingButton } from "@/components/done-cooking";
 import { BookmarkButton } from "@/components/bookmark-button";
+import { RecipeLikeDislike } from "@/components/recipe-like-dislike";
 
 type RecipeIngredient = {
   id: string;
@@ -27,6 +28,9 @@ type RecipeWithServingsProps = {
   skipDoneCookingConfirm: boolean;
   userCookCount: number;
   bookmarkExists: boolean;
+  likeCount?: number;
+  dislikeCount?: number;
+  userReaction?: "like" | "dislike" | null;
   hasUser: boolean;
 };
 
@@ -42,6 +46,9 @@ export function RecipeWithServings({
   skipDoneCookingConfirm,
   userCookCount,
   bookmarkExists,
+  likeCount = 0,
+  dislikeCount = 0,
+  userReaction = null,
   hasUser,
 }: RecipeWithServingsProps) {
   const baseServings = recipe.servings != null && recipe.servings > 0 ? recipe.servings : 1;
@@ -144,6 +151,12 @@ export function RecipeWithServings({
                   skipConfirmFromSettings={skipDoneCookingConfirm}
                   recipeIngredients={recipe.ingredients}
                   servings={servings}
+                />
+                <RecipeLikeDislike
+                  recipeId={recipe.id}
+                  initialLikeCount={likeCount}
+                  initialDislikeCount={dislikeCount}
+                  initialUserReaction={userReaction}
                 />
               </div>
             </>
