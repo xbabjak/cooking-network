@@ -2,7 +2,8 @@
 
 import { TextInput, PasswordInput } from "@mantine/core";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next13-progressbar";
+import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import Link from "next/link";
 

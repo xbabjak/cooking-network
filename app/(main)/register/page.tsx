@@ -1,7 +1,7 @@
 "use client";
 
 import { TextInput, PasswordInput } from "@mantine/core";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next13-progressbar";
 import { useState } from "react";
 import Link from "next/link";
 

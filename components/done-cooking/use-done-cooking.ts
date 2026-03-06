@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "next13-progressbar";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { notifications } from "@mantine/notifications";
 import {

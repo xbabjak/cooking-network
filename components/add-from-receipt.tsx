@@ -3,7 +3,7 @@
 import { Button, Modal, Textarea } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next13-progressbar";
 import { useRef, useState } from "react";
 import { addGroceriesFromReceipt } from "@/lib/actions/groceries";
 import { parseReceiptText } from "@/lib/receipt-parser";

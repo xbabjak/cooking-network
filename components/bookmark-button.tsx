@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "next13-progressbar";
 import { useState } from "react";
 import { ActionIcon } from "@mantine/core";
 import { notifications } from "@mantine/notifications";

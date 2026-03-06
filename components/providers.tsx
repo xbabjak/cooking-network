@@ -2,6 +2,7 @@
 
 import { createTheme, MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
+import { Next13ProgressBar } from "next13-progressbar";
 import { SessionProvider } from "next-auth/react";
 import { ReactNode } from "react";
 
@@ -26,6 +27,12 @@ const cookingTheme = createTheme({
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <MantineProvider theme={cookingTheme} defaultColorScheme="light">
+      <Next13ProgressBar
+        height="3px"
+        color="#d97706"
+        options={{ showSpinner: false }}
+        showOnShallow
+      />
       <SessionProvider>
         <Notifications position="bottom-right" />
         {children}

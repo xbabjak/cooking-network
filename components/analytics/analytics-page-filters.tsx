@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next13-progressbar";
+import { useSearchParams } from "next/navigation";
 import { SegmentedControl } from "@mantine/core";
 
 const RANGE_OPTIONS: { label: string; value: string }[] = [

@@ -13,7 +13,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import CharacterCount from "@tiptap/extension-character-count";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next13-progressbar";
 import { createPost, updatePost, deletePost } from "@/lib/actions/posts";
 import {
   getPostDraftKey,

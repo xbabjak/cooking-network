@@ -2,7 +2,7 @@
 
 import { TextInput, Textarea, PasswordInput } from "@mantine/core";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next13-progressbar";
 import { useSession } from "next-auth/react";
 import {
   getProfileDraft,
