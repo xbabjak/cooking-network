@@ -58,7 +58,12 @@ export function AddCommentForm({ postId }: Props) {
       <p className="text-xs text-muted">
         {content.length} / {MAX_LENGTH}
       </p>
-      <Button type="submit" loading={submitting} disabled={!content.trim()}>
+      <Button
+        type="submit"
+        loading={submitting}
+        disabled={!content.trim()}
+        className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground font-medium rounded-md disabled:placeholder-opacity-95"
+      >
         Post comment
       </Button>
     </form>

@@ -191,6 +191,7 @@ export default async function PostPage({ params }: Props) {
         postId={post.id}
         comments={comments}
         canComment={!!session?.user}
+        currentUserId={session?.user?.id ?? null}
       />
     </article>
   );
