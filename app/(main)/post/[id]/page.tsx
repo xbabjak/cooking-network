@@ -5,6 +5,7 @@ import { getPostById } from "@/lib/posts";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { RecipeWithServings } from "@/components/recipe-with-servings";
+import { PostComments } from "@/components/post-comments";
 import { sanitizeHtml } from "@/lib/html-utils";
 
 type Props = { params: Promise<{ id: string }> };
@@ -92,6 +93,16 @@ export default async function PostPage({ params }: Props) {
         : null;
   }
 
+  const comments = await prisma.comment.findMany({
+    where: { postId: post.id },
+    orderBy: { createdAt: "asc" },
+    include: {
+      author: {
+        select: { id: true, name: true, username: true, image: true },
+      },
+    },
+  });
+
   return (
     <article className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold">{post.title}</h1>
@@ -176,6 +187,11 @@ export default async function PostPage({ params }: Props) {
           </Link>
         </div>
       )}
+      <PostComments
+        postId={post.id}
+        comments={comments}
+        canComment={!!session?.user}
+      />
     </article>
   );
 }
