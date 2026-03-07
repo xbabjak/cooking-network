@@ -12,6 +12,9 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/feed";
   const resetSuccess = searchParams.get("reset") === "1";
+  const verifiedSuccess = searchParams.get("verified") === "1";
+  const registeredSuccess = searchParams.get("registered") === "1";
+  const resendHint = searchParams.get("resend") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -42,6 +45,17 @@ function LoginForm() {
               Password updated. Sign in with your new password.
             </p>
           )}
+          {verifiedSuccess && (
+            <p className="text-sm text-green-600 dark:text-green-400">
+              Email verified. You can sign in.
+            </p>
+          )}
+          {registeredSuccess && (
+            <p className="text-sm text-green-600 dark:text-green-400">
+              Account created. Check your email to verify your account.
+              {resendHint && " If you didn't receive it, request a new link below."}
+            </p>
+          )}
           {error && (
             <p className="text-sm text-error">{error}</p>
           )}
@@ -58,12 +72,18 @@ function LoginForm() {
             onChange={(e) => setPassword(e.currentTarget.value)}
             required
           />
-          <div className="flex justify-end">
+          <div className="flex flex-col gap-1 items-end text-sm">
             <Link
               href="/login/forgot"
-              className="text-sm text-primary hover:underline"
+              className="text-primary hover:underline"
             >
               Forgot password?
+            </Link>
+            <Link
+              href="/login/resend-verification"
+              className="text-primary hover:underline"
+            >
+              Didn&apos;t get the verification email?
             </Link>
           </div>
           <button

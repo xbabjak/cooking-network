@@ -10,6 +10,10 @@ vi.mock("bcryptjs", () => ({
   },
 }));
 
+vi.mock("@/lib/email", () => ({
+  sendVerificationEmail: vi.fn(),
+}));
+
 function jsonRequest(body: unknown): Request {
   return new Request("http://localhost/api/auth/register", {
     method: "POST",
@@ -87,6 +91,8 @@ describe("POST /api/auth/register", () => {
   });
 
   it("returns 200 and user shape on success", async () => {
+    const { sendVerificationEmail } = await import("@/lib/email");
+    vi.mocked(sendVerificationEmail).mockResolvedValue(undefined);
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.user.create).mockResolvedValue({
       id: "new-user-id",
@@ -94,6 +100,7 @@ describe("POST /api/auth/register", () => {
       name: "Test",
       username: "testuser",
     } as never);
+    vi.mocked(prisma.emailVerificationToken.create).mockResolvedValue({} as never);
     const res = await POST(
       jsonRequest({
         email: "a@b.com",
@@ -104,12 +111,13 @@ describe("POST /api/auth/register", () => {
     );
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data).toEqual({
+    expect(data).toMatchObject({
       id: "new-user-id",
       email: "a@b.com",
       name: "Test",
       username: "testuser",
     });
+    expect(typeof data.verificationEmailSent).toBe("boolean");
     expect(bcrypt.hash).toHaveBeenCalledWith("123456", 10);
     expect(prisma.user.create).toHaveBeenCalledWith({
       data: {
@@ -117,6 +125,13 @@ describe("POST /api/auth/register", () => {
         password: "hashed",
         name: "Test",
         username: "testuser",
+      },
+    });
+    expect(prisma.emailVerificationToken.create).toHaveBeenCalledWith({
+      data: {
+        userId: "new-user-id",
+        tokenHash: expect.any(String),
+        expires: expect.any(Date),
       },
     });
   });

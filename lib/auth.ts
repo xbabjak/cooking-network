@@ -61,7 +61,7 @@ export const authOptions: NextAuthOptions = {
         if (picture && user.id) {
           await prisma.user.update({
             where: { id: user.id },
-            data: { googleImageUrl: picture },
+            data: { googleImageUrl: picture, emailVerified: new Date() },
           });
         } else if (picture && user.email) {
           const existing = await prisma.user.findUnique({
@@ -70,7 +70,22 @@ export const authOptions: NextAuthOptions = {
           if (existing) {
             await prisma.user.update({
               where: { id: existing.id },
-              data: { googleImageUrl: picture },
+              data: { googleImageUrl: picture, emailVerified: new Date() },
+            });
+          }
+        } else if (user.id) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { emailVerified: new Date() },
+          });
+        } else if (user.email) {
+          const existing = await prisma.user.findUnique({
+            where: { email: user.email },
+          });
+          if (existing) {
+            await prisma.user.update({
+              where: { id: existing.id },
+              data: { emailVerified: new Date() },
             });
           }
         }
@@ -90,11 +105,12 @@ export const authOptions: NextAuthOptions = {
         session.user.username = token.username ?? null;
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id },
-          select: { image: true, name: true },
+          select: { image: true, name: true, emailVerified: true },
         });
         if (dbUser) {
           session.user.image = dbUser.image ?? undefined;
           session.user.name = dbUser.name ?? undefined;
+          session.user.emailVerified = dbUser.emailVerified ?? undefined;
         }
       }
       return session;

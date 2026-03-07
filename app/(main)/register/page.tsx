@@ -35,7 +35,8 @@ export default function RegisterPage() {
       );
       return;
     }
-    router.push("/login?registered=1");
+    const query = data.verificationEmailSent === false ? "?registered=1&resend=1" : "?registered=1";
+    router.push(`/login${query}`);
     router.refresh();
   }
 
