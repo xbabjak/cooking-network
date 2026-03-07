@@ -30,8 +30,8 @@ function ResetPasswordForm() {
     setLoading(true);
     try {
       const result = await resetPassword(token, password);
-      if (result.error) {
-        setError(result.error);
+      if ("error" in result) {
+        setError(result.error ?? "Something went wrong.");
         return;
       }
       router.push("/login?reset=1");

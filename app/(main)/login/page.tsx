@@ -12,6 +12,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/feed";
   const resetSuccess = searchParams.get("reset") === "1";
+  const registeredSuccess = searchParams.get("registered") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -40,6 +41,11 @@ function LoginForm() {
           {resetSuccess && (
             <p className="text-sm text-green-600 dark:text-green-400">
               Password updated. Sign in with your new password.
+            </p>
+          )}
+          {registeredSuccess && (
+            <p className="text-sm text-green-600 dark:text-green-400">
+              Account created. You can sign in.
             </p>
           )}
           {error && (
