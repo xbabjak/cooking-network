@@ -32,7 +32,6 @@ model User {
   cookEvents        UserCookEvent[]
   plannerEntries   PlannerEntry[]
   passwordResetTokens PasswordResetToken[]
-  emailVerificationTokens EmailVerificationToken[]
 }
 
 model Account {
@@ -70,16 +69,6 @@ model VerificationToken {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
-  userId    String
-  tokenHash String   @unique
-  expires   DateTime
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model EmailVerificationToken {
   id        String   @id @default(cuid())
   userId    String
   tokenHash String   @unique
