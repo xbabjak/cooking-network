@@ -54,6 +54,14 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: vi.fn(),
       findMany: vi.fn(),
     },
+    passwordResetToken: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   },
 }));
 

@@ -11,6 +11,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/feed";
+  const resetSuccess = searchParams.get("reset") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -36,6 +37,11 @@ function LoginForm() {
       <div className="w-full max-w-sm space-y-8">
         <h1 className="text-2xl font-bold text-center">Sign in</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {resetSuccess && (
+            <p className="text-sm text-green-600 dark:text-green-400">
+              Password updated. Sign in with your new password.
+            </p>
+          )}
           {error && (
             <p className="text-sm text-error">{error}</p>
           )}
@@ -52,6 +58,14 @@ function LoginForm() {
             onChange={(e) => setPassword(e.currentTarget.value)}
             required
           />
+          <div className="flex justify-end">
+            <Link
+              href="/login/forgot"
+              className="text-sm text-primary hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <button
             type="submit"
             className="w-full py-2 px-4 bg-primary hover:bg-primary-hover text-primary-foreground font-medium rounded-md"
